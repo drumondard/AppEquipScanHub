@@ -176,8 +176,8 @@ export default function App() {
       );
 
       const boxPrompt = bbox
-        ? `Análise focada na placa/componente na área delimitada (X: ${bbox.xmin}%-${bbox.xmax}%, Y: ${bbox.ymin}%-${bbox.ymax}%). Identifique o modelo exato da placa/equipamento, fabricante, número de série (S/N) e categoria.`
-        : `Análise técnica de equipamento/placa no arquivo ${activeItem.filename}. Extraia modelo, fabricante, número de série (S/N) e categoria.`;
+        ? `Análise focada na placa/componente na área delimitada (X: ${bbox.xmin}%-${bbox.xmax}%, Y: ${bbox.ymin}%-${bbox.ymax}%). Identifique o modelo exato da placa/equipamento, fabricante, número de série (S/N), hostname/tag de rede (ex: DT_9876_RJO_OIPB.R1S3N42H3) e categoria.`
+        : `Análise técnica de equipamento/placa no arquivo ${activeItem.filename}. Extraia modelo, fabricante, número de série (S/N), hostname/tag de rede (ex: DT_9876_RJO_OIPB.R1S3N42H3) e categoria.`;
 
       const res = await fetch("/api/identify-equipment", {
         method: "POST",
@@ -208,6 +208,7 @@ export default function App() {
                       equipamentoIdentificado: aiData.equipamentoIdentificado,
                       fabricante: aiData.fabricante,
                       numeroSerie: aiData.numeroSerie,
+                      hostname: aiData.hostname,
                       categoria: aiData.categoria,
                       nivelConfianca: aiData.nivelConfianca,
                       observacoesTecnicas: aiData.observacoesTecnicas,
@@ -220,6 +221,7 @@ export default function App() {
                       equipamentoConfirmado: aiData.equipamentoIdentificado,
                       fabricanteConfirmado: aiData.fabricante || "",
                       numeroSerieConfirmado: aiData.numeroSerie || "",
+                      hostnameConfirmado: aiData.hostname || "",
                       categoriaConfirmada: aiData.categoria || "Outro",
                       nivelConfiancaFinal: aiData.nivelConfianca || "Alto",
                       observacoesFinais: aiData.observacoesTecnicas,

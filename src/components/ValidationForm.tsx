@@ -26,6 +26,7 @@ import {
   Barcode,
   Cpu,
   Trash2,
+  Network,
 } from "lucide-react";
 
 interface ValidationFormProps {
@@ -64,6 +65,9 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
   const [numeroSerieInput, setNumeroSerieInput] = useState(
     item.validacaoHumana.numeroSerieConfirmado || item.sugestaoIa.numeroSerie || ""
   );
+  const [hostnameInput, setHostnameInput] = useState(
+    item.validacaoHumana.hostnameConfirmado || item.sugestaoIa.hostname || ""
+  );
   const [categoriaInput, setCategoriaInput] = useState<CategoriaEquipamento>(
     item.validacaoHumana.categoriaConfirmada || item.sugestaoIa.categoria || "Outro"
   );
@@ -93,6 +97,9 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
     );
     setNumeroSerieInput(
       item.validacaoHumana.numeroSerieConfirmado || item.sugestaoIa.numeroSerie || ""
+    );
+    setHostnameInput(
+      item.validacaoHumana.hostnameConfirmado || item.sugestaoIa.hostname || ""
     );
     setCategoriaInput(
       item.validacaoHumana.categoriaConfirmada || item.sugestaoIa.categoria || "Outro"
@@ -140,6 +147,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
     setEquipamentoInput(item.sugestaoIa.equipamentoIdentificado);
     if (item.sugestaoIa.fabricante) setFabricanteInput(item.sugestaoIa.fabricante);
     if (item.sugestaoIa.numeroSerie) setNumeroSerieInput(item.sugestaoIa.numeroSerie);
+    if (item.sugestaoIa.hostname) setHostnameInput(item.sugestaoIa.hostname);
     if (item.sugestaoIa.categoria) setCategoriaInput(item.sugestaoIa.categoria);
     setConfiancaInput(item.sugestaoIa.nivelConfianca);
     setObservacoesInput(item.sugestaoIa.observacoesTecnicas);
@@ -169,6 +177,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
       equipamentoConfirmado: equipamentoInput,
       fabricanteConfirmado: fabricanteInput,
       numeroSerieConfirmado: numeroSerieInput,
+      hostnameConfirmado: hostnameInput,
       categoriaConfirmada: categoriaInput,
       nivelConfiancaFinal: confiancaInput,
       observacoesFinais: observacoesInput,
@@ -187,6 +196,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
       equipamentoConfirmado: equipamentoInput,
       fabricanteConfirmado: fabricanteInput,
       numeroSerieConfirmado: numeroSerieInput,
+      hostnameConfirmado: hostnameInput,
       categoriaConfirmada: categoriaInput,
       nivelConfiancaFinal: confiancaInput,
       observacoesFinais: observacoesInput,
@@ -204,6 +214,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
       equipamentoConfirmado: equipamentoInput,
       fabricanteConfirmado: fabricanteInput,
       numeroSerieConfirmado: numeroSerieInput,
+      hostnameConfirmado: hostnameInput,
       categoriaConfirmada: categoriaInput,
       nivelConfiancaFinal: confiancaInput,
       observacoesFinais: observacoesInput,
@@ -216,6 +227,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
   const isEdited =
     equipamentoInput !== item.sugestaoIa.equipamentoIdentificado ||
     numeroSerieInput !== (item.sugestaoIa.numeroSerie || "") ||
+    hostnameInput !== (item.sugestaoIa.hostname || "") ||
     observacoesInput !== item.sugestaoIa.observacoesTecnicas;
 
   return (
@@ -297,6 +309,13 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
               <span className="text-slate-500 font-sans font-semibold">- Número de Série (S/N): </span>
               <span className="text-amber-300 font-bold">
                 {item.sugestaoIa.numeroSerie || "S/N não detectado"}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-slate-500 font-sans font-semibold">- Hostname / Tag de Rede: </span>
+              <span className="text-cyan-300 font-bold">
+                {item.sugestaoIa.hostname || "Não detectado"}
               </span>
             </div>
 
@@ -485,6 +504,21 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
               onChange={(e) => setNumeroSerieInput(e.target.value)}
               placeholder="Ex: 210235048210D4001234 ou S/N impresso na etiqueta"
               className="w-full bg-slate-950 border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-amber-200 placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono font-semibold"
+            />
+          </div>
+
+          {/* Input 3: Hostname / Tag de Rede */}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center gap-1.5">
+              <Network className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Hostname / Tag de Rede (ex: DT_9876_RJO_OIPB.R1S3N42H3)</span>
+            </label>
+            <input
+              type="text"
+              value={hostnameInput || ""}
+              onChange={(e) => setHostnameInput(e.target.value)}
+              placeholder="Ex: DT_9876_RJO_OIPB.R1S3N42H3"
+              className="w-full bg-slate-950 border border-cyan-500/40 rounded-lg px-3 py-2 text-xs text-cyan-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono font-semibold"
             />
           </div>
 

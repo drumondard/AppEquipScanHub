@@ -19,6 +19,7 @@ export function exportToCsv(repository: RepositorioData) {
     "Equipamento Confirmado",
     "Fabricante",
     "Número de Série (S/N)",
+    "Hostname / Tag de Rede",
     "Categoria",
     "Nível Confiança",
     "Observações Finais",
@@ -35,6 +36,7 @@ export function exportToCsv(repository: RepositorioData) {
     `"${(item.validacaoHumana.equipamentoConfirmado || item.sugestaoIa.equipamentoIdentificado || "").replace(/"/g, '""')}"`,
     `"${(item.validacaoHumana.fabricanteConfirmado || item.sugestaoIa.fabricante || "").replace(/"/g, '""')}"`,
     `"${(item.validacaoHumana.numeroSerieConfirmado || item.sugestaoIa.numeroSerie || "").replace(/"/g, '""')}"`,
+    `"${(item.validacaoHumana.hostnameConfirmado || item.sugestaoIa.hostname || "").replace(/"/g, '""')}"`,
     item.validacaoHumana.categoriaConfirmada || item.sugestaoIa.categoria || "Outro",
     item.validacaoHumana.nivelConfiancaFinal || item.sugestaoIa.nivelConfianca,
     `"${(item.validacaoHumana.observacoesFinais || item.sugestaoIa.observacoesTecnicas || "").replace(/"/g, '""')}"`,
@@ -65,6 +67,7 @@ CREATE TABLE IF NOT EXISTS \`telecom_infra_dataset.equipamentos_validados\` (
   equipamento_confirmado STRING OPTIONS(description="Nome técnico/modelo validado pelo operador"),
   fabricante STRING OPTIONS(description="Marca/Fabricante do equipamento ou placa"),
   numero_serie STRING OPTIONS(description="Número de Série (S/N) identificado ou validado"),
+  hostname STRING OPTIONS(description="Hostname ou tag de identificação de rede do equipamento/placa"),
   categoria STRING OPTIONS(description="Categoria do equipamento ou placa de serviço"),
   nivel_confianca STRING OPTIONS(description="Nível de confiança da análise IA (Alto, Médio, Baixo)"),
   observacoes_tecnicas STRING OPTIONS(description="Justificativa visual e notas do operador"),
@@ -81,17 +84,18 @@ CREATE TABLE IF NOT EXISTS \`telecom_infra_dataset.equipamentos_validados\` (
     const eq = (item.validacaoHumana.equipamentoConfirmado || item.sugestaoIa.equipamentoIdentificado || "").replace(/'/g, "\\'");
     const fab = (item.validacaoHumana.fabricanteConfirmado || item.sugestaoIa.fabricante || "").replace(/'/g, "\\'");
     const sn = (item.validacaoHumana.numeroSerieConfirmado || item.sugestaoIa.numeroSerie || "").replace(/'/g, "\\'");
+    const hn = (item.validacaoHumana.hostnameConfirmado || item.sugestaoIa.hostname || "").replace(/'/g, "\\'");
     const obs = (item.validacaoHumana.observacoesFinais || item.sugestaoIa.observacoesTecnicas || "").replace(/'/g, "\\'");
     const op = (item.validacaoHumana.operador || "Sistema AppEquipScan").replace(/'/g, "\\'");
     const dateStr = item.validacaoHumana.dataValidacao ? `'${item.validacaoHumana.dataValidacao}'` : "CURRENT_TIMESTAMP()";
 
     return `INSERT INTO \`telecom_infra_dataset.equipamentos_validados\` (
   id_item, repositorio_id, nome_repositorio, nome_arquivo, url_imagem, status_validacao,
-  equipamento_confirmado, fabricante, numero_serie, categoria, nivel_confianca, observacoes_tecnicas,
+  equipamento_confirmado, fabricante, numero_serie, hostname, categoria, nivel_confianca, observacoes_tecnicas,
   operador_validador, data_validacao, editado_pelo_operador, sugestao_ia_original
 ) VALUES (
   '${item.id}', '${repository.id}', '${repository.nome.replace(/'/g, "\\'")}', '${item.filename.replace(/'/g, "\\'")}', '${item.imageUrl.replace(/'/g, "\\'")}', '${item.validacaoHumana.status}',
-  '${eq}', '${fab}', '${sn}', '${item.validacaoHumana.categoriaConfirmada || "Outro"}', '${item.validacaoHumana.nivelConfiancaFinal}', '${obs}',
+  '${eq}', '${fab}', '${sn}', '${hn}', '${item.validacaoHumana.categoriaConfirmada || "Outro"}', '${item.validacaoHumana.nivelConfiancaFinal}', '${obs}',
   '${op}', ${dateStr}, ${item.validacaoHumana.editadoPeloOperador ? "TRUE" : "FALSE"},
   JSON '${JSON.stringify(item.sugestaoIa).replace(/'/g, "\\'")}'
 );`;

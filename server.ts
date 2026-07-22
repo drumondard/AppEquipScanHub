@@ -27,17 +27,19 @@ Ao analisar a imagem (ou a região delimitada da placa/equipamento selecionado),
 1. "equipamentoIdentificado": Modelo exato do equipamento ou placa (Ex: "Placa GPON 16 Portas C+ - Huawei H805GPFD", "Switch Cisco Catalyst C9300-48P", "Placa de Controle Supervisor 8L-E").
 2. "fabricante": Marca/Fabricante (Cisco, Huawei, ZTE, Intel, Asus, Furukawa, MikroTik, APC, Dell, etc.).
 3. "numeroSerie": Número de série (S/N ou Serial Number) se houver etiqueta, código de barras ou gravação visível na placa/equipamento. Se não for legível, retorne "S/N não visível".
-4. "categoria": "Switch" | "Roteador" | "OLT" | "Placa / Módulo de Serviço" | "Placa de Controle / CPU" | "Placa de Fonte / Energia" | "Placa Mãe / Circuit Board" | "Patch Panel" | "Servidor" | "Nobreak/UPS" | "DIO (Fibra)" | "Retificador 48V" | "Gabinete/Rack" | "Antena 5G" | "Outro".
-5. "nivelConfianca": "Alto" | "Médio" | "Baixo".
-6. "observacoesTecnicas": Detalhes visuais observados (ex: conectores SC/APC, portas RJ45, leds de status, modelo impresso no PCB/silk screen, etiqueta S/N).
-7. "especificacoesDetectadas": Lista de características técnicas visíveis.
-8. "boundingBox": Caixa delimitadora { "ymin": 0-100, "xmin": 0-100, "ymax": 0-100, "xmax": 0-100 }.
+4. "hostname": Nome do Host / Hostname / Tag de Identificação de Rede impresso na etiqueta (Ex: "DT_9876_RJO_OIPB.R1S3N42H3", "SP_SPO_SW01.R1S3N42H3"). Se não houver etiqueta de hostname visível, retorne "Não detectado".
+5. "categoria": "Switch" | "Roteador" | "OLT" | "Placa / Módulo de Serviço" | "Placa de Controle / CPU" | "Placa de Fonte / Energia" | "Placa Mãe / Circuit Board" | "Patch Panel" | "Servidor" | "Nobreak/UPS" | "DIO (Fibra)" | "Retificador 48V" | "Gabinete/Rack" | "Antena 5G" | "Outro".
+6. "nivelConfianca": "Alto" | "Médio" | "Baixo".
+7. "observacoesTecnicas": Detalhes visuais observados (ex: conectores SC/APC, portas RJ45, leds de status, modelo impresso no PCB/silk screen, etiqueta S/N, tag de hostname).
+8. "especificacoesDetectadas": Lista de características técnicas visíveis.
+9. "boundingBox": Caixa delimitadora { "ymin": 0-100, "xmin": 0-100, "ymax": 0-100, "xmax": 0-100 }.
 
 JSON Schema obrigatório:
 {
   "equipamentoIdentificado": "Nome técnico do equipamento ou modelo da placa",
   "fabricante": "Marca/Fabricante",
   "numeroSerie": "Número de série ou S/N não visível",
+  "hostname": "Hostname/Tag de rede (Ex: DT_9876_RJO_OIPB.R1S3N42H3) ou Não detectado",
   "categoria": "Switch | Roteador | OLT | Placa / Módulo de Serviço | Placa de Controle / CPU | Placa de Fonte / Energia | Placa Mãe / Circuit Board | Servidor | Outro",
   "nivelConfianca": "Alto | Médio | Baixo",
   "observacoesTecnicas": "Justificativa visual com detalhes da placa ou equipamento",
@@ -140,6 +142,7 @@ JSON Schema obrigatório:
               equipamentoIdentificado: { type: Type.STRING },
               fabricante: { type: Type.STRING },
               numeroSerie: { type: Type.STRING },
+              hostname: { type: Type.STRING },
               categoria: { type: Type.STRING },
               nivelConfianca: { type: Type.STRING },
               observacoesTecnicas: { type: Type.STRING },
@@ -176,6 +179,7 @@ JSON Schema obrigatório:
         equipamentoIdentificado: "Placa de Serviço GPON 16 Portas H805GPFD",
         fabricante: "Huawei",
         numeroSerie: "210235048210D4001234",
+        hostname: "DT_9876_RJO_OIPB.R1S3N42H3",
         categoria: "Placa / Módulo de Serviço",
         nivelConfianca: "Alto",
         observacoesTecnicas:
@@ -196,6 +200,7 @@ JSON Schema obrigatório:
       equipamentoIdentificado: "Switch de Borda Gerenciável L2/L3",
       fabricante: "Cisco Systems",
       numeroSerie: "FOC2418L1XY",
+      hostname: "SP_SPO_SW01.R1S3N42H3",
       categoria: "Switch",
       nivelConfianca: "Alto",
       observacoesTecnicas:

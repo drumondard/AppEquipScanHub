@@ -39,6 +39,7 @@ export interface EquipamentoItem {
     equipamentoIdentificado: string;
     fabricante?: string;
     numeroSerie?: string;
+    hostname?: string;
     categoria?: CategoriaEquipamento;
     nivelConfianca: NivelConfianca;
     observacoesTecnicas: string;
@@ -53,6 +54,7 @@ export interface EquipamentoItem {
     equipamentoConfirmado: string;
     fabricanteConfirmado: string;
     numeroSerieConfirmado?: string;
+    hostnameConfirmado?: string;
     categoriaConfirmada: CategoriaEquipamento;
     nivelConfiancaFinal: NivelConfianca;
     observacoesFinais: string;
