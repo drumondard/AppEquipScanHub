@@ -6,6 +6,10 @@ export type CategoriaEquipamento =
   | "Switch"
   | "Roteador"
   | "OLT"
+  | "Placa / Módulo de Serviço"
+  | "Placa de Controle / CPU"
+  | "Placa de Fonte / Energia"
+  | "Placa Mãe / Circuit Board"
   | "Patch Panel"
   | "Servidor"
   | "Nobreak/UPS"
@@ -34,6 +38,7 @@ export interface EquipamentoItem {
   sugestaoIa: {
     equipamentoIdentificado: string;
     fabricante?: string;
+    numeroSerie?: string;
     categoria?: CategoriaEquipamento;
     nivelConfianca: NivelConfianca;
     observacoesTecnicas: string;
@@ -47,6 +52,7 @@ export interface EquipamentoItem {
     status: StatusValidacao;
     equipamentoConfirmado: string;
     fabricanteConfirmado: string;
+    numeroSerieConfirmado?: string;
     categoriaConfirmada: CategoriaEquipamento;
     nivelConfiancaFinal: NivelConfianca;
     observacoesFinais: string;

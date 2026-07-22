@@ -23,7 +23,8 @@ import {
   Tag,
   Building,
   Crop,
-  Layers,
+  Barcode,
+  Cpu,
 } from "lucide-react";
 
 interface ValidationFormProps {
@@ -57,6 +58,9 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
   const [fabricanteInput, setFabricanteInput] = useState(
     item.validacaoHumana.fabricanteConfirmado || item.sugestaoIa.fabricante || ""
   );
+  const [numeroSerieInput, setNumeroSerieInput] = useState(
+    item.validacaoHumana.numeroSerieConfirmado || item.sugestaoIa.numeroSerie || ""
+  );
   const [categoriaInput, setCategoriaInput] = useState<CategoriaEquipamento>(
     item.validacaoHumana.categoriaConfirmada || item.sugestaoIa.categoria || "Outro"
   );
@@ -83,6 +87,9 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
     );
     setFabricanteInput(
       item.validacaoHumana.fabricanteConfirmado || item.sugestaoIa.fabricante || ""
+    );
+    setNumeroSerieInput(
+      item.validacaoHumana.numeroSerieConfirmado || item.sugestaoIa.numeroSerie || ""
     );
     setCategoriaInput(
       item.validacaoHumana.categoriaConfirmada || item.sugestaoIa.categoria || "Outro"
@@ -124,6 +131,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
   const handleCopyFromAi = () => {
     setEquipamentoInput(item.sugestaoIa.equipamentoIdentificado);
     if (item.sugestaoIa.fabricante) setFabricanteInput(item.sugestaoIa.fabricante);
+    if (item.sugestaoIa.numeroSerie) setNumeroSerieInput(item.sugestaoIa.numeroSerie);
     if (item.sugestaoIa.categoria) setCategoriaInput(item.sugestaoIa.categoria);
     setConfiancaInput(item.sugestaoIa.nivelConfianca);
     setObservacoesInput(item.sugestaoIa.observacoesTecnicas);
@@ -152,6 +160,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
       status: "Confirmado",
       equipamentoConfirmado: equipamentoInput,
       fabricanteConfirmado: fabricanteInput,
+      numeroSerieConfirmado: numeroSerieInput,
       categoriaConfirmada: categoriaInput,
       nivelConfiancaFinal: confiancaInput,
       observacoesFinais: observacoesInput,
@@ -169,6 +178,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
       status: "Corrigido",
       equipamentoConfirmado: equipamentoInput,
       fabricanteConfirmado: fabricanteInput,
+      numeroSerieConfirmado: numeroSerieInput,
       categoriaConfirmada: categoriaInput,
       nivelConfiancaFinal: confiancaInput,
       observacoesFinais: observacoesInput,
@@ -185,6 +195,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
       status: "Rejeitado",
       equipamentoConfirmado: equipamentoInput,
       fabricanteConfirmado: fabricanteInput,
+      numeroSerieConfirmado: numeroSerieInput,
       categoriaConfirmada: categoriaInput,
       nivelConfiancaFinal: confiancaInput,
       observacoesFinais: observacoesInput,
@@ -196,6 +207,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
 
   const isEdited =
     equipamentoInput !== item.sugestaoIa.equipamentoIdentificado ||
+    numeroSerieInput !== (item.sugestaoIa.numeroSerie || "") ||
     observacoesInput !== item.sugestaoIa.observacoesTecnicas;
 
   return (
@@ -260,9 +272,23 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
 
           <div className="space-y-2 text-xs font-mono">
             <div>
-              <span className="text-slate-500 font-sans font-semibold">- Equipamento Identificado: </span>
+              <span className="text-slate-500 font-sans font-semibold">- Equipamento/Placa: </span>
               <span className="text-indigo-200 font-bold">
                 {item.sugestaoIa.equipamentoIdentificado}
+              </span>
+            </div>
+
+            {item.sugestaoIa.fabricante && (
+              <div>
+                <span className="text-slate-500 font-sans font-semibold">- Fabricante: </span>
+                <span className="text-slate-200 font-bold">{item.sugestaoIa.fabricante}</span>
+              </div>
+            )}
+
+            <div>
+              <span className="text-slate-500 font-sans font-semibold">- Número de Série (S/N): </span>
+              <span className="text-amber-300 font-bold">
+                {item.sugestaoIa.numeroSerie || "S/N não detectado"}
               </span>
             </div>
 
@@ -425,21 +451,36 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
             )}
           </div>
 
-          {/* Input 1: Equipamento Identificado */}
+          {/* Input 1: Equipamento / Placa Identificada */}
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              Equipamento Identificado / Modelo <span className="text-rose-400">*</span>
+              Equipamento ou Modelo de Placa <span className="text-rose-400">*</span>
             </label>
             <input
               type="text"
               value={equipamentoInput}
               onChange={(e) => setEquipamentoInput(e.target.value)}
-              placeholder="Ex: Switch Cisco Catalyst C9300-48P"
+              placeholder="Ex: Placa GPON 16 Portas H805GPFD ou Switch C9300-48P"
               className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors font-medium"
             />
           </div>
 
-          {/* Input 2 & 3: Fabricante e Categoria */}
+          {/* Input 2: Número de Série (S/N) */}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center gap-1.5">
+              <Barcode className="w-3.5 h-3.5 text-amber-400" />
+              <span>Número de Série (S/N / Serial Number)</span>
+            </label>
+            <input
+              type="text"
+              value={numeroSerieInput}
+              onChange={(e) => setNumeroSerieInput(e.target.value)}
+              placeholder="Ex: 210235048210D4001234 ou S/N impresso na etiqueta"
+              className="w-full bg-slate-950 border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-amber-200 placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono font-semibold"
+            />
+          </div>
+
+          {/* Input 3 & 4: Fabricante e Categoria */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center gap-1">
@@ -450,7 +491,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
                 type="text"
                 value={fabricanteInput}
                 onChange={(e) => setFabricanteInput(e.target.value)}
-                placeholder="Ex: Cisco, Huawei"
+                placeholder="Ex: Cisco, Huawei, ZTE"
                 className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
               />
             </div>
@@ -465,6 +506,10 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
                 onChange={(e) => setCategoriaInput(e.target.value as CategoriaEquipamento)}
                 className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
               >
+                <option value="Placa / Módulo de Serviço">Placa / Módulo de Serviço</option>
+                <option value="Placa de Controle / CPU">Placa de Controle / CPU</option>
+                <option value="Placa de Fonte / Energia">Placa de Fonte / Energia</option>
+                <option value="Placa Mãe / Circuit Board">Placa Mãe / Circuit Board</option>
                 <option value="Switch">Switch</option>
                 <option value="Roteador">Roteador</option>
                 <option value="OLT">OLT</option>

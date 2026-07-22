@@ -18,17 +18,28 @@ async function analyzeEquipmentImage(
   mimeType: string,
   customPrompt?: string
 ) {
-  const systemInstruction = `Você é o componente de IA especializado em visão computacional e identificação de equipamentos de infraestrutura e telecomunicações para o aplicativo AppEquipScanHub.
+  const systemInstruction = `Você é o componente de IA especializado em visão computacional e identificação de equipamentos de infraestrutura, telecomunicações e placas/módulos eletrônicos para o aplicativo AppEquipScanHub.
 
-Sua função é analisar imagens de equipamentos de rede, telecomunicações e infraestrutura enviadas pelo sistema (como switches, roteadores, OLTs, patch panels, servidores, nobreaks/UPS, gabinetes outdoor, DIOs de fibra, retificadores, etc.), identificar o tipo exato do equipamento com base em características visuais (como modelo, painéis de portas RJ45/SFP, conectores de fibra, gabinetes, ventilação ou marcações físicas) e retornar a resposta estritamente formatada em JSON válido.
+Sua função é analisar imagens de equipamentos completos (chassis, racks, switches, OLTs, roteadores, servidores) OU placas/módulos específicos selecionados pelo usuário (como placas de serviço GPON, placas de controle/CPU, placas mãe, placas de alimentação/fonte, transceivers/SFP, etc.).
+
+Ao analisar a imagem (ou a região delimitada da placa/equipamento selecionado), extraia com máxima precisão:
+1. "equipamentoIdentificado": Modelo exato do equipamento ou placa (Ex: "Placa GPON 16 Portas C+ - Huawei H805GPFD", "Switch Cisco Catalyst C9300-48P", "Placa de Controle Supervisor 8L-E").
+2. "fabricante": Marca/Fabricante (Cisco, Huawei, ZTE, Intel, Asus, Furukawa, MikroTik, APC, Dell, etc.).
+3. "numeroSerie": Número de série (S/N ou Serial Number) se houver etiqueta, código de barras ou gravação visível na placa/equipamento. Se não for legível, retorne "S/N não visível".
+4. "categoria": "Switch" | "Roteador" | "OLT" | "Placa / Módulo de Serviço" | "Placa de Controle / CPU" | "Placa de Fonte / Energia" | "Placa Mãe / Circuit Board" | "Patch Panel" | "Servidor" | "Nobreak/UPS" | "DIO (Fibra)" | "Retificador 48V" | "Gabinete/Rack" | "Antena 5G" | "Outro".
+5. "nivelConfianca": "Alto" | "Médio" | "Baixo".
+6. "observacoesTecnicas": Detalhes visuais observados (ex: conectores SC/APC, portas RJ45, leds de status, modelo impresso no PCB/silk screen, etiqueta S/N).
+7. "especificacoesDetectadas": Lista de características técnicas visíveis.
+8. "boundingBox": Caixa delimitadora { "ymin": 0-100, "xmin": 0-100, "ymax": 0-100, "xmax": 0-100 }.
 
 JSON Schema obrigatório:
 {
-  "equipamentoIdentificado": "Nome técnico ou modelo exato do equipamento",
-  "fabricante": "Marca/Fabricante (Cisco, Huawei, MikroTik, APC, Dell, Furukawa, etc.)",
-  "categoria": "Switch | Roteador | OLT | Patch Panel | Servidor | Nobreak/UPS | DIO | Retificador | Outro",
+  "equipamentoIdentificado": "Nome técnico do equipamento ou modelo da placa",
+  "fabricante": "Marca/Fabricante",
+  "numeroSerie": "Número de série ou S/N não visível",
+  "categoria": "Switch | Roteador | OLT | Placa / Módulo de Serviço | Placa de Controle / CPU | Placa de Fonte / Energia | Placa Mãe / Circuit Board | Servidor | Outro",
   "nivelConfianca": "Alto | Médio | Baixo",
-  "observacoesTecnicas": "Justificativa visual com detalhes observados",
+  "observacoesTecnicas": "Justificativa visual com detalhes da placa ou equipamento",
   "especificacoesDetectadas": ["especificacao 1", "especificacao 2"],
   "boundingBox": { "ymin": 15, "xmin": 15, "ymax": 85, "xmax": 85 }
 }`;
@@ -123,6 +134,7 @@ JSON Schema obrigatório:
             properties: {
               equipamentoIdentificado: { type: Type.STRING },
               fabricante: { type: Type.STRING },
+              numeroSerie: { type: Type.STRING },
               categoria: { type: Type.STRING },
               nivelConfianca: { type: Type.STRING },
               observacoesTecnicas: { type: Type.STRING },

@@ -17,6 +17,7 @@ export const SAMPLE_REPOSITORIES: RepositorioData[] = [
         sugestaoIa: {
           equipamentoIdentificado: "Switch Cisco Catalyst C9300-48P",
           fabricante: "Cisco Systems",
+          numeroSerie: "FOC2418L1XY",
           categoria: "Switch",
           nivelConfianca: "Alto",
           observacoesTecnicas: "Painel frontal com 48 portas Gigabit Ethernet RJ-45 com PoE+ e 4 portas SFP+ 10G uplink. Carcaça cinza metálica de 1U com LED de status operacional ativo.",
@@ -28,6 +29,7 @@ export const SAMPLE_REPOSITORIES: RepositorioData[] = [
           status: "Pendente",
           equipamentoConfirmado: "Switch Cisco Catalyst C9300-48P",
           fabricanteConfirmado: "Cisco Systems",
+          numeroSerieConfirmado: "FOC2418L1XY",
           categoriaConfirmada: "Switch",
           nivelConfiancaFinal: "Alto",
           observacoesFinais: "Painel frontal com 48 portas Gigabit Ethernet RJ-45 com PoE+ e 4 portas SFP+ 10G uplink. Carcaça cinza metálica de 1U com LED de status operacional ativo.",

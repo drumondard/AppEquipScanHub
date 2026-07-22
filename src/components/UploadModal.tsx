@@ -46,6 +46,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       let aiResponseData = {
         equipamentoIdentificado: `Equipamento de Rede (Foto #${index + 1})`,
         fabricante: "Não Detectado",
+        numeroSerie: "S/N não visível",
         categoria: "Outro" as const,
         nivelConfianca: "Médio" as const,
         observacoesTecnicas: "Imagem carregada pelo operador. Processamento inicial visual.",
@@ -80,6 +81,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         sugestaoIa: {
           equipamentoIdentificado: aiResponseData.equipamentoIdentificado,
           fabricante: aiResponseData.fabricante,
+          numeroSerie: aiResponseData.numeroSerie,
           categoria: aiResponseData.categoria as any,
           nivelConfianca: aiResponseData.nivelConfianca as any,
           observacoesTecnicas: aiResponseData.observacoesTecnicas,
@@ -91,6 +93,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           status: "Pendente",
           equipamentoConfirmado: aiResponseData.equipamentoIdentificado,
           fabricanteConfirmado: aiResponseData.fabricante || "",
+          numeroSerieConfirmado: aiResponseData.numeroSerie || "",
           categoriaConfirmada: (aiResponseData.categoria as any) || "Outro",
           nivelConfiancaFinal: (aiResponseData.nivelConfianca as any) || "Médio",
           observacoesFinais: aiResponseData.observacoesTecnicas,

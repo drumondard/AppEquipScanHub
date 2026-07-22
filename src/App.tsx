@@ -172,12 +172,17 @@ export default function App() {
     setIsLoadingIa(true);
 
     try {
+      const bbox = activeItem.sugestaoIa.boundingBox;
+      const boxPrompt = bbox
+        ? `Análise focada especificamente na placa/componente ou equipamento na área delimitada X: ${bbox.xmin}%-${bbox.xmax}%, Y: ${bbox.ymin}%-${bbox.ymax}%. Identifique modelo exato da placa/equipamento, fabricante, número de série (S/N), categoria e características.`
+        : `Análise técnica de equipamento/placa no arquivo ${activeItem.filename}. Extraia modelo, fabricante, número de série (S/N) e categoria.`;
+
       const res = await fetch("/api/identify-equipment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageBase64: activeItem.imageUrl,
-          customPrompt: `Análise técnica de equipamento no arquivo ${activeItem.filename}`,
+          customPrompt: boxPrompt,
         }),
       });
 
@@ -198,17 +203,19 @@ export default function App() {
                     sugestaoIa: {
                       equipamentoIdentificado: aiData.equipamentoIdentificado,
                       fabricante: aiData.fabricante,
+                      numeroSerie: aiData.numeroSerie,
                       categoria: aiData.categoria,
                       nivelConfianca: aiData.nivelConfianca,
                       observacoesTecnicas: aiData.observacoesTecnicas,
                       especificacoesDetectadas: aiData.especificacoesDetectadas,
-                      boundingBox: aiData.boundingBox,
+                      boundingBox: aiData.boundingBox || item.sugestaoIa.boundingBox,
                       timestampAnalise: new Date().toLocaleString("pt-BR"),
                     },
                     validacaoHumana: {
                       ...item.validacaoHumana,
                       equipamentoConfirmado: aiData.equipamentoIdentificado,
                       fabricanteConfirmado: aiData.fabricante || "",
+                      numeroSerieConfirmado: aiData.numeroSerie || "",
                       categoriaConfirmada: aiData.categoria || "Outro",
                       nivelConfiancaFinal: aiData.nivelConfianca || "Alto",
                       observacoesFinais: aiData.observacoesTecnicas,

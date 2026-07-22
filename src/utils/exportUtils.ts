@@ -18,6 +18,7 @@ export function exportToCsv(repository: RepositorioData) {
     "Status Validação",
     "Equipamento Confirmado",
     "Fabricante",
+    "Número de Série (S/N)",
     "Categoria",
     "Nível Confiança",
     "Observações Finais",
@@ -33,6 +34,7 @@ export function exportToCsv(repository: RepositorioData) {
     item.validacaoHumana.status,
     `"${(item.validacaoHumana.equipamentoConfirmado || item.sugestaoIa.equipamentoIdentificado || "").replace(/"/g, '""')}"`,
     `"${(item.validacaoHumana.fabricanteConfirmado || item.sugestaoIa.fabricante || "").replace(/"/g, '""')}"`,
+    `"${(item.validacaoHumana.numeroSerieConfirmado || item.sugestaoIa.numeroSerie || "").replace(/"/g, '""')}"`,
     item.validacaoHumana.categoriaConfirmada || item.sugestaoIa.categoria || "Outro",
     item.validacaoHumana.nivelConfiancaFinal || item.sugestaoIa.nivelConfianca,
     `"${(item.validacaoHumana.observacoesFinais || item.sugestaoIa.observacoesTecnicas || "").replace(/"/g, '""')}"`,
@@ -45,24 +47,25 @@ export function exportToCsv(repository: RepositorioData) {
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `appequipscan_relatorio_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute("download", `appequipscan_relatorio_${repository.nome.toLowerCase().replace(/[^a-z0-9]/g, "_")}_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
   link.remove();
 }
 
 export function generateBigQueryScript(repository: RepositorioData): string {
-  const createTableSql = `-- Script de Criação de Tabela BigQuery para o AppEquipScan
+  const createTableSql = `-- Script de Criação de Tabela BigQuery para o AppEquipScanHub
 CREATE TABLE IF NOT EXISTS \`telecom_infra_dataset.equipamentos_validados\` (
-  id_item STRING OPTIONS(description="Identificador único da foto de equipamento"),
-  repositorio_id STRING OPTIONS(description="Identificador do repositório"),
-  nome_repositorio STRING OPTIONS(description="Nome do lote/repositório"),
+  id_item STRING OPTIONS(description="Identificador único da foto de equipamento/placa"),
+  repositorio_id STRING OPTIONS(description="Identificador do repositório UF-LOC-EST"),
+  nome_repositorio STRING OPTIONS(description="Nome do lote/repositório UF-LOC-EST"),
   nome_arquivo STRING OPTIONS(description="Nome do arquivo de imagem"),
   url_imagem STRING OPTIONS(description="Link público ou URL do repositório Cloud Storage"),
   status_validacao STRING OPTIONS(description="Status da revisão humana: Pendente, Confirmado, Corrigido, Rejeitado"),
   equipamento_confirmado STRING OPTIONS(description="Nome técnico/modelo validado pelo operador"),
-  fabricante STRING OPTIONS(description="Marca/Fabricante do equipamento"),
-  categoria STRING OPTIONS(description="Categoria do equipamento de infraestrutura"),
+  fabricante STRING OPTIONS(description="Marca/Fabricante do equipamento ou placa"),
+  numero_serie STRING OPTIONS(description="Número de Série (S/N) identificado ou validado"),
+  categoria STRING OPTIONS(description="Categoria do equipamento ou placa de serviço"),
   nivel_confianca STRING OPTIONS(description="Nível de confiança da análise IA (Alto, Médio, Baixo)"),
   observacoes_tecnicas STRING OPTIONS(description="Justificativa visual e notas do operador"),
   operador_validador STRING OPTIONS(description="Identificação do engenheiro/técnico de campo"),
@@ -77,17 +80,18 @@ CREATE TABLE IF NOT EXISTS \`telecom_infra_dataset.equipamentos_validados\` (
   const insertStatements = repository.itens.map((item) => {
     const eq = (item.validacaoHumana.equipamentoConfirmado || item.sugestaoIa.equipamentoIdentificado || "").replace(/'/g, "\\'");
     const fab = (item.validacaoHumana.fabricanteConfirmado || item.sugestaoIa.fabricante || "").replace(/'/g, "\\'");
+    const sn = (item.validacaoHumana.numeroSerieConfirmado || item.sugestaoIa.numeroSerie || "").replace(/'/g, "\\'");
     const obs = (item.validacaoHumana.observacoesFinais || item.sugestaoIa.observacoesTecnicas || "").replace(/'/g, "\\'");
     const op = (item.validacaoHumana.operador || "Sistema AppEquipScan").replace(/'/g, "\\'");
     const dateStr = item.validacaoHumana.dataValidacao ? `'${item.validacaoHumana.dataValidacao}'` : "CURRENT_TIMESTAMP()";
 
     return `INSERT INTO \`telecom_infra_dataset.equipamentos_validados\` (
   id_item, repositorio_id, nome_repositorio, nome_arquivo, url_imagem, status_validacao,
-  equipamento_confirmado, fabricante, categoria, nivel_confianca, observacoes_tecnicas,
+  equipamento_confirmado, fabricante, numero_serie, categoria, nivel_confianca, observacoes_tecnicas,
   operador_validador, data_validacao, editado_pelo_operador, sugestao_ia_original
 ) VALUES (
   '${item.id}', '${repository.id}', '${repository.nome.replace(/'/g, "\\'")}', '${item.filename.replace(/'/g, "\\'")}', '${item.imageUrl.replace(/'/g, "\\'")}', '${item.validacaoHumana.status}',
-  '${eq}', '${fab}', '${item.validacaoHumana.categoriaConfirmada || "Outro"}', '${item.validacaoHumana.nivelConfiancaFinal}', '${obs}',
+  '${eq}', '${fab}', '${sn}', '${item.validacaoHumana.categoriaConfirmada || "Outro"}', '${item.validacaoHumana.nivelConfiancaFinal}', '${obs}',
   '${op}', ${dateStr}, ${item.validacaoHumana.editadoPeloOperador ? "TRUE" : "FALSE"},
   JSON '${JSON.stringify(item.sugestaoIa).replace(/'/g, "\\'")}'
 );`;
