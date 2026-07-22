@@ -1,0 +1,19 @@
+
+-----------------------------------------------------
+Servidor: 10.119.13.58
+Pagina: http://10.119.13.58:8080/
+cd /AppEquipScanHub
+-----------------------------------------------------
+# -->> GIT >> Enviar
+git add .
+git commit -m "Atualização para Desenvolvimento"
+git push
+
+#>> Envie para o repositório ou atualize o arquivo no servidor:
+git pull
+
+#>> Limpe o cache de build anterior do docker para garantir que ele ignore camadas corrompidas:
+docker builder prune -f
+
+# >> Configurar o Docker Compose
+docker compose up -d --build

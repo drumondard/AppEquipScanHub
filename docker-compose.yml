@@ -5,12 +5,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - HTTP_PROXY=http://10.130.12.13:82
+        - HTTPS_PROXY=http://10.130.12.13:82
+        - http_proxy=http://10.130.12.13:82
+        - https_proxy=http://10.130.12.13:82
     container_name: app-equip-scan-hub
     restart: always
     ports:
       # Mapeamento da porta no Servidor 10.119.13.58
       # Se a porta 3000 do host estiver ocupada, você pode alterar para "3001:3000" ou "8080:3000"
-      - "3000:3000"
+      - "8080:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
