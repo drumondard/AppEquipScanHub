@@ -53,7 +53,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
 
   // Local Form state synced with active item
   const [equipamentoInput, setEquipamentoInput] = useState(
-    item.validacaoHumana.equipamentoConfirmado || item.sugestaoIa.equipamentoIdentificado
+    item.validacaoHumana.equipamentoConfirmado || item.sugestaoIa.equipamentoIdentificado || ""
   );
   const [fabricanteInput, setFabricanteInput] = useState(
     item.validacaoHumana.fabricanteConfirmado || item.sugestaoIa.fabricante || ""
@@ -68,22 +68,22 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
     item.validacaoHumana.nivelConfiancaFinal || item.sugestaoIa.nivelConfianca || "Alto"
   );
   const [observacoesInput, setObservacoesInput] = useState(
-    item.validacaoHumana.observacoesFinais || item.sugestaoIa.observacoesTecnicas
+    item.validacaoHumana.observacoesFinais || item.sugestaoIa.observacoesTecnicas || ""
   );
-  const [operadorInput, setOperadorInput] = useState(getInitialOperator());
+  const [operadorInput, setOperadorInput] = useState(getInitialOperator() || "");
   const [operadorError, setOperadorError] = useState(false);
 
   // Local Bounding Box state
   const bbox = item.sugestaoIa.boundingBox || { ymin: 20, xmin: 15, ymax: 80, xmax: 85 };
-  const [ymin, setYmin] = useState(bbox.ymin);
-  const [xmin, setXmin] = useState(bbox.xmin);
-  const [ymax, setYmax] = useState(bbox.ymax);
-  const [xmax, setXmax] = useState(bbox.xmax);
+  const [ymin, setYmin] = useState(bbox.ymin ?? 20);
+  const [xmin, setXmin] = useState(bbox.xmin ?? 15);
+  const [ymax, setYmax] = useState(bbox.ymax ?? 80);
+  const [xmax, setXmax] = useState(bbox.xmax ?? 85);
 
   // Sync state whenever selected item changes
   useEffect(() => {
     setEquipamentoInput(
-      item.validacaoHumana.equipamentoConfirmado || item.sugestaoIa.equipamentoIdentificado
+      item.validacaoHumana.equipamentoConfirmado || item.sugestaoIa.equipamentoIdentificado || ""
     );
     setFabricanteInput(
       item.validacaoHumana.fabricanteConfirmado || item.sugestaoIa.fabricante || ""
@@ -98,16 +98,21 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
       item.validacaoHumana.nivelConfiancaFinal || item.sugestaoIa.nivelConfianca || "Alto"
     );
     setObservacoesInput(
-      item.validacaoHumana.observacoesFinais || item.sugestaoIa.observacoesTecnicas
+      item.validacaoHumana.observacoesFinais || item.sugestaoIa.observacoesTecnicas || ""
     );
-    setOperadorInput(getInitialOperator());
+    setOperadorInput(getInitialOperator() || "");
     setOperadorError(false);
 
     if (item.sugestaoIa.boundingBox) {
-      setYmin(item.sugestaoIa.boundingBox.ymin);
-      setXmin(item.sugestaoIa.boundingBox.xmin);
-      setYmax(item.sugestaoIa.boundingBox.ymax);
-      setXmax(item.sugestaoIa.boundingBox.xmax);
+      setYmin(item.sugestaoIa.boundingBox.ymin ?? 20);
+      setXmin(item.sugestaoIa.boundingBox.xmin ?? 15);
+      setYmax(item.sugestaoIa.boundingBox.ymax ?? 80);
+      setXmax(item.sugestaoIa.boundingBox.xmax ?? 85);
+    } else {
+      setYmin(20);
+      setXmin(15);
+      setYmax(80);
+      setXmax(85);
     }
   }, [item]);
 
@@ -435,7 +440,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
             <input
               type="text"
               required
-              value={operadorInput}
+              value={operadorInput || ""}
               onChange={(e) => handleOperatorChange(e.target.value)}
               placeholder="Digite seu nome (Ex: Carlos Silva, João Souza)"
               className={`w-full bg-slate-950 border rounded-lg px-3 py-2 text-xs font-semibold text-slate-100 placeholder-slate-500 focus:outline-none transition-all ${
@@ -458,7 +463,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
             </label>
             <input
               type="text"
-              value={equipamentoInput}
+              value={equipamentoInput || ""}
               onChange={(e) => setEquipamentoInput(e.target.value)}
               placeholder="Ex: Placa GPON 16 Portas H805GPFD ou Switch C9300-48P"
               className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors font-medium"
@@ -473,7 +478,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
             </label>
             <input
               type="text"
-              value={numeroSerieInput}
+              value={numeroSerieInput || ""}
               onChange={(e) => setNumeroSerieInput(e.target.value)}
               placeholder="Ex: 210235048210D4001234 ou S/N impresso na etiqueta"
               className="w-full bg-slate-950 border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-amber-200 placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono font-semibold"
@@ -489,7 +494,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
               </label>
               <input
                 type="text"
-                value={fabricanteInput}
+                value={fabricanteInput || ""}
                 onChange={(e) => setFabricanteInput(e.target.value)}
                 placeholder="Ex: Cisco, Huawei, ZTE"
                 className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
@@ -502,7 +507,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
                 <span>Categoria</span>
               </label>
               <select
-                value={categoriaInput}
+                value={categoriaInput || "Outro"}
                 onChange={(e) => setCategoriaInput(e.target.value as CategoriaEquipamento)}
                 className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
               >
@@ -560,7 +565,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
             </label>
             <textarea
               rows={3}
-              value={observacoesInput}
+              value={observacoesInput || ""}
               onChange={(e) => setObservacoesInput(e.target.value)}
               placeholder="Breve justificativa visual de 1 ou 2 linhas explicando os elementos identificados..."
               className="w-full bg-slate-950 border border-slate-700/80 rounded-lg p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 leading-relaxed"

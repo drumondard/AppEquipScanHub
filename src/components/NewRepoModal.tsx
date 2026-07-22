@@ -143,7 +143,7 @@ export const NewRepoModal: React.FC<NewRepoModalProps> = ({
                 <div>
                   <label className="block text-[11px] text-slate-400 mb-1">UF (Estado)</label>
                   <select
-                    value={uf}
+                    value={uf || "SP"}
                     onChange={(e) => setUf(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-100 font-mono font-bold focus:outline-none focus:border-indigo-500"
                   >
@@ -162,7 +162,7 @@ export const NewRepoModal: React.FC<NewRepoModalProps> = ({
                     type="text"
                     required
                     maxLength={5}
-                    value={loc}
+                    value={loc || ""}
                     onChange={(e) => setLoc(e.target.value.toUpperCase())}
                     placeholder="Ex: SPO"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-100 font-mono font-bold uppercase placeholder-slate-600 focus:outline-none focus:border-indigo-500"
@@ -176,7 +176,7 @@ export const NewRepoModal: React.FC<NewRepoModalProps> = ({
                     type="text"
                     required
                     maxLength={8}
-                    value={est}
+                    value={est || ""}
                     onChange={(e) => setEst(e.target.value.toUpperCase())}
                     placeholder="Ex: EST01"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-100 font-mono font-bold uppercase placeholder-slate-600 focus:outline-none focus:border-indigo-500"
@@ -192,7 +192,7 @@ export const NewRepoModal: React.FC<NewRepoModalProps> = ({
               <input
                 type="text"
                 required
-                value={nomeCustomizado}
+                value={nomeCustomizado || ""}
                 onChange={handleCustomNameChange}
                 placeholder="Ex: SP-SPO-EST01 ou RJ-RJO-POP04"
                 className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-100 placeholder-slate-600 focus:outline-none ${
@@ -222,7 +222,7 @@ export const NewRepoModal: React.FC<NewRepoModalProps> = ({
             <label className="block text-xs font-medium text-slate-300 mb-1">Descrição</label>
             <textarea
               rows={2}
-              value={descricao}
+              value={descricao || ""}
               onChange={(e) => setDescricao(e.target.value)}
               placeholder="Breve descrição dos equipamentos ou localização..."
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"

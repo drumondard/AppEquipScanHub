@@ -164,7 +164,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <input
             type="text"
             placeholder="Buscar modelo..."
-            value={searchQuery}
+            value={searchQuery || ""}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-2.5 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
