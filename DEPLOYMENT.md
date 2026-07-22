@@ -126,3 +126,14 @@ docker compose down
 git pull
 docker compose up -d --build
 ```
+
+
+
+
+### atualizar o servidor utilizando as alterações mais recentes do repositório Git
+# 1. Sincronizar o repositório com a versão mais recente do Git
+git fetch origin
+git reset --hard origin/main
+
+# 2. Subir a aplicação reconstruindo a imagem e aplicando o docker-compose
+docker compose up -d --build
