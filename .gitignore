@@ -1,8 +1,19 @@
+cat << 'EOF' > .gitignore
+# Dependências
 node_modules/
+
+# Builds e Compilações
 build/
 dist/
 coverage/
+
+# Arquivos do Sistema Operacional
 .DS_Store
+
+# Logs
 *.log
+
+# Variáveis de Ambiente (mantendo o exemplo)
 .env*
 !.env.example
+EOF
