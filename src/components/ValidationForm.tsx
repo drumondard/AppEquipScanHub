@@ -25,6 +25,7 @@ import {
   Crop,
   Barcode,
   Cpu,
+  Trash2,
 } from "lucide-react";
 
 interface ValidationFormProps {
@@ -36,6 +37,7 @@ interface ValidationFormProps {
   onReanalyzeWithAi: () => void;
   isLoadingIa: boolean;
   onUpdateBoundingBox?: (newBox: BoundingBox) => void;
+  onDeletePhoto?: (itemId: string) => void;
 }
 
 export const ValidationForm: React.FC<ValidationFormProps> = ({
@@ -45,6 +47,7 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
   onReanalyzeWithAi,
   isLoadingIa,
   onUpdateBoundingBox,
+  onDeletePhoto,
 }) => {
   // Retrieve persistent operator name or item operator or empty
   const getInitialOperator = () => {
@@ -597,12 +600,27 @@ export const ValidationForm: React.FC<ValidationFormProps> = ({
 
             <button
               onClick={handleReject}
-              className="flex items-center justify-center gap-1.5 py-2 px-3 bg-slate-800 hover:bg-rose-950 hover:text-rose-300 border border-slate-700 text-slate-300 font-medium text-xs rounded-xl transition-colors"
+              className="flex items-center justify-center gap-1.5 py-2 px-3 bg-slate-800 hover:bg-amber-950 hover:text-amber-300 border border-slate-700 text-slate-300 font-medium text-xs rounded-xl transition-colors"
             >
               <XCircle className="w-3.5 h-3.5" />
-              <span>Rejeitar / Inconclusivo</span>
+              <span>Rejeitar</span>
             </button>
           </div>
+
+          {onDeletePhoto && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Tem certeza que deseja excluir a foto "${item.filename}" deste lote? Ela não será restaurada.`)) {
+                  onDeletePhoto(item.id);
+                }
+              }}
+              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 font-medium text-xs rounded-xl transition-colors mt-2"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Excluir Esta Foto do Lote</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

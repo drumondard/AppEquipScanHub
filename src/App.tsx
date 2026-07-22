@@ -10,15 +10,16 @@ import { ExportModal } from "./components/ExportModal";
 import { NewRepoModal } from "./components/NewRepoModal";
 import { UploadModal } from "./components/UploadModal";
 import { ClearRepoModal } from "./components/ClearRepoModal";
+import { getCroppedImageBase64 } from "./utils/imageCropper";
 
 export default function App() {
-  // Session Persistence (localStorage initialized)
+  // Session Persistence (localStorage initialized, preserving empty states)
   const [repositories, setRepositories] = useState<RepositorioData[]>(() => {
     const saved = localStorage.getItem("appequipscan_repos");
-    if (saved) {
+    if (saved !== null) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       } catch (e) {
@@ -29,7 +30,7 @@ export default function App() {
   });
 
   const [selectedRepoId, setSelectedRepoId] = useState<string>(
-    repositories[0]?.id || "repo-sp-spo-est14"
+    repositories[0]?.id || ""
   );
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("Todos");
@@ -50,14 +51,8 @@ export default function App() {
 
   // Current active repository
   const currentRepo = useMemo(() => {
-    return repositories.find((r) => r.id === selectedRepoId) || repositories[0] || {
-      id: "repo-default",
-      nome: "SP-SPO-EST01",
-      descricao: "Lote técnico de equipamentos",
-      icone: "Server",
-      dataCriacao: new Date().toISOString().slice(0, 10),
-      itens: [],
-    };
+    if (repositories.length === 0) return null;
+    return repositories.find((r) => r.id === selectedRepoId) || repositories[0] || null;
   }, [repositories, selectedRepoId]);
 
   // Filter items in current repository
@@ -166,23 +161,32 @@ export default function App() {
     );
   };
 
-  // Live re-analysis with Gemini AI Server
+  // Live re-analysis with Gemini AI Server using cropped bounding box
   const handleReanalyzeWithAi = async () => {
-    if (!activeItem) return;
+    if (!activeItem || !currentRepo) return;
     setIsLoadingIa(true);
 
     try {
       const bbox = activeItem.sugestaoIa.boundingBox;
+      
+      // Crop image based on bounding box
+      const { croppedBase64, mimeType } = await getCroppedImageBase64(
+        activeItem.imageUrl,
+        bbox
+      );
+
       const boxPrompt = bbox
-        ? `Análise focada especificamente na placa/componente ou equipamento na área delimitada X: ${bbox.xmin}%-${bbox.xmax}%, Y: ${bbox.ymin}%-${bbox.ymax}%. Identifique modelo exato da placa/equipamento, fabricante, número de série (S/N), categoria e características.`
+        ? `Análise focada na placa/componente na área delimitada (X: ${bbox.xmin}%-${bbox.xmax}%, Y: ${bbox.ymin}%-${bbox.ymax}%). Identifique o modelo exato da placa/equipamento, fabricante, número de série (S/N) e categoria.`
         : `Análise técnica de equipamento/placa no arquivo ${activeItem.filename}. Extraia modelo, fabricante, número de série (S/N) e categoria.`;
 
       const res = await fetch("/api/identify-equipment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageBase64: activeItem.imageUrl,
+          imageBase64: croppedBase64,
+          mimeType,
           customPrompt: boxPrompt,
+          boundingBox: bbox,
         }),
       });
 
@@ -236,7 +240,7 @@ export default function App() {
 
   // Update Bounding Box for the active item
   const handleUpdateBoundingBox = (newBox: BoundingBox) => {
-    if (!activeItem) return;
+    if (!activeItem || !currentRepo) return;
 
     setRepositories((prev) =>
       prev.map((repo) => {
@@ -277,7 +281,22 @@ export default function App() {
     setSelectedRepoId(newRepo.id);
   };
 
-  // Clear items from a specific repository
+  // Delete a single photo from active repo (will not be restored)
+  const handleDeleteSinglePhoto = (itemId: string) => {
+    if (!currentRepo) return;
+    setRepositories((prev) =>
+      prev.map((repo) => {
+        if (repo.id !== currentRepo.id) return repo;
+        return {
+          ...repo,
+          itens: repo.itens.filter((item) => item.id !== itemId),
+        };
+      })
+    );
+    setActiveItemId(null);
+  };
+
+  // Clear items from a specific repository (will not be restored)
   const handleClearRepoItems = (repoId: string) => {
     setRepositories((prev) =>
       prev.map((repo) => {
@@ -291,26 +310,20 @@ export default function App() {
     setActiveItemId(null);
   };
 
-  // Delete a repository completely
+  // Delete a repository completely (will not automatically restore default repos)
   const handleDeleteRepo = (repoId: string) => {
-    setRepositories((prev) => {
-      const remaining = prev.filter((r) => r.id !== repoId);
-      if (remaining.length === 0) {
-        return SAMPLE_REPOSITORIES;
-      }
-      return remaining;
-    });
-
     const remainingRepos = repositories.filter((r) => r.id !== repoId);
+    setRepositories(remainingRepos);
+
     if (remainingRepos.length > 0) {
       setSelectedRepoId(remainingRepos[0].id);
     } else {
-      setSelectedRepoId(SAMPLE_REPOSITORIES[0].id);
+      setSelectedRepoId("");
     }
     setActiveItemId(null);
   };
 
-  // Reset all repositories to sample data
+  // Reset all repositories to sample data explicitly on request
   const handleResetAllRepos = () => {
     setRepositories(SAMPLE_REPOSITORIES);
     setSelectedRepoId(SAMPLE_REPOSITORIES[0].id);
@@ -319,6 +332,7 @@ export default function App() {
 
   // Add uploaded images handler
   const handleAddImages = (newItems: EquipamentoItem[]) => {
+    if (!currentRepo) return;
     setRepositories((prev) =>
       prev.map((repo) => {
         if (repo.id !== currentRepo.id) return repo;
@@ -359,7 +373,7 @@ export default function App() {
       {/* Dynamic Repository Selection Sidebar */}
       <Sidebar
         repositories={repositories}
-        selectedRepoId={currentRepo.id}
+        selectedRepoId={currentRepo ? currentRepo.id : ""}
         onSelectRepo={(id) => {
           setSelectedRepoId(id);
           setFilterStatus("Todos");
@@ -421,6 +435,7 @@ export default function App() {
               onReanalyzeWithAi={handleReanalyzeWithAi}
               isLoadingIa={isLoadingIa}
               onUpdateBoundingBox={handleUpdateBoundingBox}
+              onDeletePhoto={handleDeleteSinglePhoto}
             />
           )}
         </main>
@@ -445,7 +460,7 @@ export default function App() {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onAddImages={handleAddImages}
-        repoId={currentRepo.id}
+        repoId={currentRepo ? currentRepo.id : ""}
       />
 
       {currentRepo && (

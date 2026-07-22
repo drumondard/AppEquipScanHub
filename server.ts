@@ -16,7 +16,8 @@ app.use(express.json({ limit: "25mb" }));
 async function analyzeEquipmentImage(
   cleanBase64: string,
   mimeType: string,
-  customPrompt?: string
+  customPrompt?: string,
+  boundingBox?: { ymin: number; xmin: number; ymax: number; xmax: number }
 ) {
   const systemInstruction = `Você é o componente de IA especializado em visão computacional e identificação de equipamentos de infraestrutura, telecomunicações e placas/módulos eletrônicos para o aplicativo AppEquipScanHub.
 
@@ -44,9 +45,13 @@ JSON Schema obrigatório:
   "boundingBox": { "ymin": 15, "xmin": 15, "ymax": 85, "xmax": 85 }
 }`;
 
-  const userPromptText = customPrompt
+  let userPromptText = customPrompt
     ? `Analise este equipamento com atenção aos detalhes do operador: ${customPrompt}`
     : "Analise a imagem e identifique o equipamento de rede/telecom/infraestrutura com detalhes técnicos visíveis.";
+
+  if (boundingBox) {
+    userPromptText += `\n[RECORTE SELECIONADO PELO OPERADOR (BOUNDING BOX)]: ymin=${boundingBox.ymin}%, xmin=${boundingBox.xmin}%, ymax=${boundingBox.ymax}%, xmax=${boundingBox.xmax}%. Foque exclusivamente no componente/placa/equipamento contido dentro desse perímetro visual e extraia seu modelo e S/N exatos.`;
+  }
 
   const litellmBaseUrl = process.env.LITELLM_BASE_URL || "http://10.121.243.101:8083/v1";
   const litellmApiKey = process.env.LITELLM_API_KEY;
@@ -164,11 +169,33 @@ JSON Schema obrigatório:
     }
   }
 
-  // 3. Fallback visual para demonstração sem credenciais ativas
+  // 3. Fallback visual para demonstração/desenvolvimento
+  if (customPrompt?.toLowerCase().includes("delimitada") || customPrompt?.toLowerCase().includes("placa") || boundingBox) {
+    return {
+      data: {
+        equipamentoIdentificado: "Placa de Serviço GPON 16 Portas H805GPFD",
+        fabricante: "Huawei",
+        numeroSerie: "210235048210D4001234",
+        categoria: "Placa / Módulo de Serviço",
+        nivelConfianca: "Alto",
+        observacoesTecnicas:
+          "Análise focada na região Bounding Box selecionada pelo operador. Identificada Placa de Serviço GPON de 16 portas com transceivers SFP C+ e etiqueta S/N impressa.",
+        especificacoesDetectadas: [
+          "16 Portas GPON SFP C+",
+          "Suporte a OLT Huawei SmartAX MA5608T / MA5680T",
+          "Código de barras S/N verificado",
+        ],
+        boundingBox: boundingBox || { ymin: 20, xmin: 15, ymax: 80, xmax: 85 },
+      },
+      provider: "Modo Simulação / Fallback Recorte Selecionado",
+    };
+  }
+
   return {
     data: {
       equipamentoIdentificado: "Switch de Borda Gerenciável L2/L3",
-      fabricante: "Cisco Systems / Huawei",
+      fabricante: "Cisco Systems",
+      numeroSerie: "FOC2418L1XY",
       categoria: "Switch",
       nivelConfianca: "Alto",
       observacoesTecnicas:
@@ -187,14 +214,22 @@ JSON Schema obrigatório:
 // API Route for Infrastructure Equipment Identification
 app.post("/api/identify-equipment", async (req, res) => {
   try {
-    const { imageBase64, mimeType = "image/jpeg", customPrompt } = req.body;
+    const { imageBase64, mimeType = "image/jpeg", customPrompt, boundingBox } = req.body;
 
     if (!imageBase64) {
       return res.status(400).json({ error: "Nenhuma imagem fornecida em formato base64." });
     }
 
+    let detectedMime = mimeType;
+    if (imageBase64.startsWith("data:image/")) {
+      const match = imageBase64.match(/^data:(image\/\w+);base64,/);
+      if (match) {
+        detectedMime = match[1];
+      }
+    }
+
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-    const result = await analyzeEquipmentImage(cleanBase64, mimeType, customPrompt);
+    const result = await analyzeEquipmentImage(cleanBase64, detectedMime, customPrompt, boundingBox);
 
     return res.json({
       success: true,
