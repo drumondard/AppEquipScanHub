@@ -1,5 +1,5 @@
-import React, { useState, useRef } from "react";
-import { EquipamentoItem } from "../types";
+import React, { useState, useRef, useEffect } from "react";
+import { EquipamentoItem, BoundingBox } from "../types";
 import {
   ZoomIn,
   ZoomOut,
@@ -10,11 +10,14 @@ import {
   Eye,
   EyeOff,
   Crosshair,
-  Info,
+  Crop,
   CheckCircle2,
   AlertCircle,
   Clock,
   XCircle,
+  Move,
+  RotateCcw,
+  Sparkles,
 } from "lucide-react";
 
 interface ImageViewerProps {
@@ -22,6 +25,7 @@ interface ImageViewerProps {
   allFilteredItems: EquipamentoItem[];
   onSelectThumbnail: (id: string) => void;
   isLoadingIa: boolean;
+  onUpdateBoundingBox?: (newBox: BoundingBox) => void;
 }
 
 export const ImageViewer: React.FC<ImageViewerProps> = ({
@@ -29,6 +33,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   allFilteredItems,
   onSelectThumbnail,
   isLoadingIa,
+  onUpdateBoundingBox,
 }) => {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -36,7 +41,23 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   const [showCrosshair, setShowCrosshair] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Bounding Box Editing State
+  const [isEditingBbox, setIsEditingBbox] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
+  const [tempBbox, setTempBbox] = useState<BoundingBox | null>(null);
+
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    if (item?.sugestaoIa.boundingBox) {
+      setTempBbox(item.sugestaoIa.boundingBox);
+    } else {
+      setTempBbox(null);
+    }
+    // Reset edit mode when item changes
+    setIsEditingBbox(false);
+  }, [item?.id, item?.sugestaoIa.boundingBox]);
 
   if (!item) {
     return (
@@ -56,7 +77,69 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   };
   const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
 
-  const bbox = item.sugestaoIa.boundingBox;
+  const bbox = tempBbox || item.sugestaoIa.boundingBox;
+
+  // Calculate mouse position relative to the image in percentage (0 to 100)
+  const getRelativeImageCoords = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imageRef.current) return null;
+    const rect = imageRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    return { x, y };
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isEditingBbox) return;
+    const coords = getRelativeImageCoords(e);
+    if (!coords) return;
+    setIsDrawing(true);
+    setDrawStart(coords);
+    setTempBbox({
+      ymin: Math.round(coords.y),
+      xmin: Math.round(coords.x),
+      ymax: Math.round(coords.y),
+      xmax: Math.round(coords.x),
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isEditingBbox || !isDrawing || !drawStart) return;
+    const coords = getRelativeImageCoords(e);
+    if (!coords) return;
+
+    const ymin = Math.round(Math.min(drawStart.y, coords.y));
+    const xmin = Math.round(Math.min(drawStart.x, coords.x));
+    const ymax = Math.round(Math.max(drawStart.y, coords.y));
+    const xmax = Math.round(Math.max(drawStart.x, coords.x));
+
+    setTempBbox({ ymin, xmin, ymax, xmax });
+  };
+
+  const handleMouseUp = () => {
+    if (!isEditingBbox || !isDrawing || !tempBbox) return;
+    setIsDrawing(false);
+    
+    // Ensure box has minimum size of 3%
+    const finalBox: BoundingBox = {
+      ymin: tempBbox.ymin,
+      xmin: tempBbox.xmin,
+      ymax: Math.max(tempBbox.ymax, tempBbox.ymin + 3),
+      xmax: Math.max(tempBbox.xmax, tempBbox.xmin + 3),
+    };
+
+    setTempBbox(finalBox);
+    if (onUpdateBoundingBox) {
+      onUpdateBoundingBox(finalBox);
+    }
+  };
+
+  const handleResetBox = () => {
+    const defaultBox = { ymin: 20, xmin: 15, ymax: 80, xmax: 85 };
+    setTempBbox(defaultBox);
+    if (onUpdateBoundingBox) {
+      onUpdateBoundingBox(defaultBox);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -109,6 +192,25 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
 
         {/* Right Controls */}
         <div className="pointer-events-auto flex items-center gap-1 bg-slate-900/90 border border-slate-800/80 p-1 rounded-xl shadow-lg backdrop-blur-md">
+          {/* Edit Bounding Box Button */}
+          <button
+            onClick={() => {
+              setIsEditingBbox(!isEditingBbox);
+              if (!showBoundingBox) setShowBoundingBox(true);
+            }}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+              isEditingBbox
+                ? "bg-amber-500 text-slate-950 font-bold shadow-md animate-pulse"
+                : "bg-slate-800 text-amber-300 hover:bg-slate-700 border border-amber-500/30"
+            }`}
+            title="Redimensionar / Arrastar Bounding Box do Equipamento"
+          >
+            <Crop className="w-3.5 h-3.5" />
+            <span>{isEditingBbox ? "Concluir Seleção" : "Ajustar Caixa IA"}</span>
+          </button>
+
+          <div className="w-px h-4 bg-slate-800 my-auto mx-0.5" />
+
           <button
             onClick={() => setShowBoundingBox(!showBoundingBox)}
             className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -179,11 +281,24 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
         </div>
       </div>
 
+      {/* Editing Banner */}
+      {isEditingBbox && (
+        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-30 bg-amber-950/90 border border-amber-500/50 text-amber-200 text-xs px-4 py-2 rounded-xl shadow-2xl backdrop-blur-md flex items-center gap-3">
+          <Move className="w-4 h-4 text-amber-400 animate-bounce" />
+          <span>
+            <strong>Modo de Edição Ativo:</strong> Clique e arraste o mouse sobre o equipamento na foto para desenhar a nova área.
+          </span>
+          <button
+            onClick={handleResetBox}
+            className="px-2 py-0.5 bg-amber-900/80 hover:bg-amber-800 border border-amber-600 rounded text-[11px] font-semibold text-white flex items-center gap-1"
+          >
+            <RotateCcw className="w-3 h-3" /> Redefinir
+          </button>
+        </div>
+      )}
+
       {/* Main Image Stage */}
-      <div
-        ref={containerRef}
-        className="flex-1 flex items-center justify-center p-6 overflow-hidden relative"
-      >
+      <div className="flex-1 flex items-center justify-center p-6 overflow-hidden relative">
         {/* Loading Spinner Overlay when AI is re-analyzing */}
         {isLoadingIa && (
           <div className="absolute inset-0 z-30 bg-slate-950/75 backdrop-blur-sm flex flex-col items-center justify-center text-center p-4">
@@ -206,28 +321,39 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
           </div>
         )}
 
-        {/* Render Image with Transformations */}
+        {/* Render Image with Transformations & Interactive Bounding Box */}
         <div
-          className="relative transition-transform duration-200 ease-out max-w-full max-h-full flex items-center justify-center"
+          className={`relative transition-transform duration-200 ease-out max-w-full max-h-full flex items-center justify-center ${
+            isEditingBbox ? "cursor-crosshair" : ""
+          }`}
           style={{
             transform: `scale(${zoom}) rotate(${rotation}deg)`,
           }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
         >
           <img
+            ref={imageRef}
             src={item.imageUrl}
             alt={item.sugestaoIa.equipamentoIdentificado}
-            className="max-h-[70vh] w-auto object-contain rounded-lg border border-slate-800 shadow-2xl"
+            className="max-h-[70vh] w-auto object-contain rounded-lg border border-slate-800 shadow-2xl pointer-events-auto"
+            draggable={false}
           />
 
-          {/* AI Bounding Box Overlay */}
+          {/* AI / User Editable Bounding Box Overlay */}
           {showBoundingBox && bbox && (
             <div
-              className="absolute border-2 border-cyan-400/90 bg-cyan-500/10 rounded pointer-events-none transition-all shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+              className={`absolute rounded transition-all shadow-[0_0_15px_rgba(34,211,238,0.3)] ${
+                isEditingBbox
+                  ? "border-2 border-amber-400 bg-amber-500/20"
+                  : "border-2 border-cyan-400/90 bg-cyan-500/10 pointer-events-none"
+              }`}
               style={{
                 top: `${bbox.ymin}%`,
                 left: `${bbox.xmin}%`,
-                width: `${Math.max(bbox.xmax - bbox.xmin, 5)}%`,
-                height: `${Math.max(bbox.ymax - bbox.ymin, 5)}%`,
+                width: `${Math.max(bbox.xmax - bbox.xmin, 3)}%`,
+                height: `${Math.max(bbox.ymax - bbox.ymin, 3)}%`,
               }}
             >
               <div className="absolute -top-7 left-0 bg-slate-900/90 border border-cyan-500/50 text-cyan-300 text-[10px] font-mono px-2 py-0.5 rounded shadow-lg flex items-center gap-1.5 whitespace-nowrap">
@@ -236,7 +362,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
                   {item.validacaoHumana.equipamentoConfirmado || item.sugestaoIa.equipamentoIdentificado}
                 </span>
                 <span className="text-[9px] px-1 bg-cyan-950 text-cyan-400 rounded">
-                  {item.sugestaoIa.nivelConfianca}
+                  Y:{bbox.ymin}% X:{bbox.xmin}%
                 </span>
               </div>
             </div>
@@ -266,7 +392,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
                 }`}
               >
                 <img src={thumb.imageUrl} alt="" className="w-full h-full object-cover" />
-                
+
                 {/* Small Status Corner Dot */}
                 <div
                   className={`absolute top-1 right-1 w-2.5 h-2.5 rounded-full border border-slate-900 ${

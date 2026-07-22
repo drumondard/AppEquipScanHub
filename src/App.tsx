@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { RepositorioData, EquipamentoItem } from "./types";
+import { RepositorioData, EquipamentoItem, BoundingBox } from "./types";
 import { SAMPLE_REPOSITORIES } from "./data/sampleRepositories";
 import { Sidebar } from "./components/Sidebar";
 import { Navbar } from "./components/Navbar";
@@ -9,6 +9,7 @@ import { ValidationForm } from "./components/ValidationForm";
 import { ExportModal } from "./components/ExportModal";
 import { NewRepoModal } from "./components/NewRepoModal";
 import { UploadModal } from "./components/UploadModal";
+import { ClearRepoModal } from "./components/ClearRepoModal";
 
 export default function App() {
   // Session Persistence (localStorage initialized)
@@ -16,7 +17,10 @@ export default function App() {
     const saved = localStorage.getItem("appequipscan_repos");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       } catch (e) {
         console.error("Erro ao carregar dados salvos da sessão:", e);
       }
@@ -25,7 +29,7 @@ export default function App() {
   });
 
   const [selectedRepoId, setSelectedRepoId] = useState<string>(
-    repositories[0]?.id || "repo-datacenter-sp1"
+    repositories[0]?.id || "repo-sp-spo-est14"
   );
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("Todos");
@@ -37,6 +41,7 @@ export default function App() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isNewRepoModalOpen, setIsNewRepoModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   // Save session state to localStorage on update
   useEffect(() => {
@@ -45,7 +50,14 @@ export default function App() {
 
   // Current active repository
   const currentRepo = useMemo(() => {
-    return repositories.find((r) => r.id === selectedRepoId) || repositories[0];
+    return repositories.find((r) => r.id === selectedRepoId) || repositories[0] || {
+      id: "repo-default",
+      nome: "SP-SPO-EST01",
+      descricao: "Lote técnico de equipamentos",
+      icone: "Server",
+      dataCriacao: new Date().toISOString().slice(0, 10),
+      itens: [],
+    };
   }, [repositories, selectedRepoId]);
 
   // Filter items in current repository
@@ -136,7 +148,7 @@ export default function App() {
 
     setRepositories((prev) =>
       prev.map((repo) => {
-        if (repo.id !== selectedRepoId) return repo;
+        if (repo.id !== currentRepo.id) return repo;
         return {
           ...repo,
           itens: repo.itens.map((item) => {
@@ -176,7 +188,7 @@ export default function App() {
 
           setRepositories((prev) =>
             prev.map((repo) => {
-              if (repo.id !== selectedRepoId) return repo;
+              if (repo.id !== currentRepo.id) return repo;
               return {
                 ...repo,
                 itens: repo.itens.map((item) => {
@@ -215,6 +227,34 @@ export default function App() {
     }
   };
 
+  // Update Bounding Box for the active item
+  const handleUpdateBoundingBox = (newBox: BoundingBox) => {
+    if (!activeItem) return;
+
+    setRepositories((prev) =>
+      prev.map((repo) => {
+        if (repo.id !== currentRepo.id) return repo;
+        return {
+          ...repo,
+          itens: repo.itens.map((item) => {
+            if (item.id !== activeItem.id) return item;
+            return {
+              ...item,
+              sugestaoIa: {
+                ...item.sugestaoIa,
+                boundingBox: newBox,
+              },
+              validacaoHumana: {
+                ...item.validacaoHumana,
+                editadoPeloOperador: true,
+              },
+            };
+          }),
+        };
+      })
+    );
+  };
+
   // Add new repository handler
   const handleCreateRepo = (nome: string, descricao: string, icone: string) => {
     const newRepo: RepositorioData = {
@@ -230,11 +270,51 @@ export default function App() {
     setSelectedRepoId(newRepo.id);
   };
 
+  // Clear items from a specific repository
+  const handleClearRepoItems = (repoId: string) => {
+    setRepositories((prev) =>
+      prev.map((repo) => {
+        if (repo.id !== repoId) return repo;
+        return {
+          ...repo,
+          itens: [],
+        };
+      })
+    );
+    setActiveItemId(null);
+  };
+
+  // Delete a repository completely
+  const handleDeleteRepo = (repoId: string) => {
+    setRepositories((prev) => {
+      const remaining = prev.filter((r) => r.id !== repoId);
+      if (remaining.length === 0) {
+        return SAMPLE_REPOSITORIES;
+      }
+      return remaining;
+    });
+
+    const remainingRepos = repositories.filter((r) => r.id !== repoId);
+    if (remainingRepos.length > 0) {
+      setSelectedRepoId(remainingRepos[0].id);
+    } else {
+      setSelectedRepoId(SAMPLE_REPOSITORIES[0].id);
+    }
+    setActiveItemId(null);
+  };
+
+  // Reset all repositories to sample data
+  const handleResetAllRepos = () => {
+    setRepositories(SAMPLE_REPOSITORIES);
+    setSelectedRepoId(SAMPLE_REPOSITORIES[0].id);
+    setActiveItemId(null);
+  };
+
   // Add uploaded images handler
   const handleAddImages = (newItems: EquipamentoItem[]) => {
     setRepositories((prev) =>
       prev.map((repo) => {
-        if (repo.id !== selectedRepoId) return repo;
+        if (repo.id !== currentRepo.id) return repo;
         return {
           ...repo,
           itens: [...repo.itens, ...newItems],
@@ -272,7 +352,7 @@ export default function App() {
       {/* Dynamic Repository Selection Sidebar */}
       <Sidebar
         repositories={repositories}
-        selectedRepoId={selectedRepoId}
+        selectedRepoId={currentRepo.id}
         onSelectRepo={(id) => {
           setSelectedRepoId(id);
           setFilterStatus("Todos");
@@ -281,6 +361,7 @@ export default function App() {
         onOpenNewRepoModal={() => setIsNewRepoModalOpen(true)}
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
+        onOpenClearModal={() => setIsClearModalOpen(true)}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
@@ -289,7 +370,7 @@ export default function App() {
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
         {/* Top Navbar */}
         <Navbar
-          repoName={currentRepo ? currentRepo.nome : "AppEquipScan"}
+          repoName={currentRepo ? currentRepo.nome : "AppEquipScanHub"}
           currentIndex={currentItemIndex}
           totalItems={filteredItems.length}
           onPrevious={handlePrevious}
@@ -319,6 +400,7 @@ export default function App() {
             allFilteredItems={filteredItems}
             onSelectThumbnail={(id) => setActiveItemId(id)}
             isLoadingIa={isLoadingIa}
+            onUpdateBoundingBox={handleUpdateBoundingBox}
           />
 
           {/* Right: Human Validation & AI Suggestion Form */}
@@ -331,6 +413,7 @@ export default function App() {
               }}
               onReanalyzeWithAi={handleReanalyzeWithAi}
               isLoadingIa={isLoadingIa}
+              onUpdateBoundingBox={handleUpdateBoundingBox}
             />
           )}
         </main>
@@ -355,8 +438,19 @@ export default function App() {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onAddImages={handleAddImages}
-        repoId={selectedRepoId}
+        repoId={currentRepo.id}
       />
+
+      {currentRepo && (
+        <ClearRepoModal
+          isOpen={isClearModalOpen}
+          onClose={() => setIsClearModalOpen(false)}
+          currentRepo={currentRepo}
+          onClearItems={handleClearRepoItems}
+          onDeleteRepo={handleDeleteRepo}
+          onResetAllRepos={handleResetAllRepos}
+        />
+      )}
     </div>
   );
 }

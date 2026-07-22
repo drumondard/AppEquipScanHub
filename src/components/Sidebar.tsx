@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { RepositorioData } from "../types";
 import {
   Folder,
@@ -12,6 +12,7 @@ import {
   Clock,
   ChevronRight,
   Database,
+  Eraser,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -21,6 +22,7 @@ interface SidebarProps {
   onOpenNewRepoModal: () => void;
   onOpenUploadModal: () => void;
   onOpenExportModal: () => void;
+  onOpenClearModal: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
@@ -32,11 +34,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenNewRepoModal,
   onOpenUploadModal,
   onOpenExportModal,
+  onOpenClearModal,
   isCollapsed,
   onToggleCollapse,
 }) => {
-  const currentRepo = repositories.find((r) => r.id === selectedRepoId) || repositories[0];
-
   const getRepoIcon = (iconName: string) => {
     switch (iconName) {
       case "Server":
@@ -65,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <div>
               <h2 className="font-semibold text-slate-100 text-sm tracking-wide">Repositórios</h2>
-              <p className="text-[11px] text-slate-400">Seleção Dinâmica de Lotes</p>
+              <p className="text-[11px] text-indigo-400 font-mono">Padrão: UF-LOC-EST</p>
             </div>
           </div>
         )}
@@ -81,8 +82,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Main Repositories List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-1">
         {!isCollapsed && (
-          <div className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase px-2 mb-2">
-            Diretórios Locais & Lotes
+          <div className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase px-2 mb-2 flex items-center justify-between">
+            <span>Lotes Registrados</span>
+            <span className="text-indigo-400 font-mono">UF-LOC-EST</span>
           </div>
         )}
 
@@ -114,10 +116,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   {!isCollapsed && (
                     <div className="min-w-0">
-                      <div className="font-medium text-xs text-slate-200 truncate group-hover:text-white">
+                      <div className="font-semibold text-xs font-mono text-slate-100 truncate group-hover:text-indigo-300">
                         {repo.nome}
                       </div>
-                      <div className="text-[11px] text-slate-400 truncate mt-0.5">{total} imagens registradas</div>
+                      <div className="text-[11px] text-slate-400 truncate mt-0.5">{total} fotos salvas</div>
                     </div>
                   )}
                 </div>
@@ -156,21 +158,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span>Adicionar Fotos ao Lote</span>
             </button>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-1.5">
               <button
                 onClick={onOpenNewRepoModal}
-                className="flex items-center justify-center gap-1.5 py-2 px-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-[11px] transition-colors"
+                className="flex items-center justify-center gap-1 py-2 px-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-[11px] transition-colors"
+                title="Criar novo lote UF-LOC-EST"
               >
                 <FolderPlus className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Novo Lote</span>
+                <span>Novo</span>
               </button>
 
               <button
                 onClick={onOpenExportModal}
-                className="flex items-center justify-center gap-1.5 py-2 px-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-[11px] transition-colors"
+                className="flex items-center justify-center gap-1 py-2 px-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-[11px] transition-colors"
+                title="Exportar dados do lote"
               >
                 <Database className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Exportar</span>
+              </button>
+
+              <button
+                onClick={onOpenClearModal}
+                className="flex items-center justify-center gap-1 py-2 px-1.5 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 rounded-lg text-[11px] transition-colors"
+                title="Limpar ou excluir lote selecionado"
+              >
+                <Eraser className="w-3.5 h-3.5 text-rose-400" />
+                <span>Limpar</span>
               </button>
             </div>
           </>
@@ -186,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={onOpenNewRepoModal}
               className="p-2.5 bg-slate-800 text-indigo-400 rounded-lg hover:bg-slate-700 transition-colors border border-slate-700"
-              title="Novo Repositório"
+              title="Novo Repositório UF-LOC-EST"
             >
               <FolderPlus className="w-4 h-4" />
             </button>
@@ -196,6 +209,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               title="Exportar Dados"
             >
               <Database className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onOpenClearModal}
+              className="p-2.5 bg-rose-950/40 text-rose-400 rounded-lg hover:bg-rose-900/60 transition-colors border border-rose-500/30"
+              title="Limpar Lote Selecionado"
+            >
+              <Eraser className="w-4 h-4" />
             </button>
           </div>
         )}

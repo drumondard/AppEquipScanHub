@@ -2,15 +2,15 @@ import { RepositorioData } from "../types";
 
 export const SAMPLE_REPOSITORIES: RepositorioData[] = [
   {
-    id: "repo-datacenter-sp1",
-    nome: "Datacenter Core SP-01 (Rack 14A ao 18B)",
-    descricao: "Infraestrutura principal de rede local, switches core de alta densidade e roteadores BGP.",
+    id: "repo-sp-spo-est14",
+    nome: "SP-SPO-EST14",
+    descricao: "Datacenter Core SP-01 (Rack 14A ao 18B) - Infraestrutura principal de rede local, switches core de alta densidade e roteadores BGP.",
     icone: "Server",
     dataCriacao: "2026-07-20",
     itens: [
       {
         id: "eq-001",
-        repositoryId: "repo-datacenter-sp1",
+        repositoryId: "repo-sp-spo-est14",
         filename: "rack_14a_cisco_sw9300.jpg",
         imageUrl: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80",
         uploadDate: "2026-07-20 14:32",
@@ -36,7 +36,7 @@ export const SAMPLE_REPOSITORIES: RepositorioData[] = [
       },
       {
         id: "eq-002",
-        repositoryId: "repo-datacenter-sp1",
+        repositoryId: "repo-sp-spo-est14",
         filename: "rack_14a_huawei_olt_ma5608t.jpg",
         imageUrl: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80",
         uploadDate: "2026-07-20 14:35",
@@ -64,7 +64,7 @@ export const SAMPLE_REPOSITORIES: RepositorioData[] = [
       },
       {
         id: "eq-003",
-        repositoryId: "repo-datacenter-sp1",
+        repositoryId: "repo-sp-spo-est14",
         filename: "patchpanel_cat6a_furukawa.jpg",
         imageUrl: "https://images.unsplash.com/photo-1563770660941-20978e870e26?auto=format&fit=crop&w=1200&q=80",
         uploadDate: "2026-07-20 14:40",
@@ -90,7 +90,7 @@ export const SAMPLE_REPOSITORIES: RepositorioData[] = [
       },
       {
         id: "eq-004",
-        repositoryId: "repo-datacenter-sp1",
+        repositoryId: "repo-sp-spo-est14",
         filename: "rack_16b_apc_smartups_3000.jpg",
         imageUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
         uploadDate: "2026-07-20 14:48",
@@ -118,7 +118,7 @@ export const SAMPLE_REPOSITORIES: RepositorioData[] = [
       },
       {
         id: "eq-005",
-        repositoryId: "repo-datacenter-sp1",
+        repositoryId: "repo-sp-spo-est14",
         filename: "rack_18b_dell_poweredge_r750.jpg",
         imageUrl: "https://images.unsplash.com/photo-1597852074816-d933c7d2b988?auto=format&fit=crop&w=1200&q=80",
         uploadDate: "2026-07-20 15:02",
@@ -145,15 +145,15 @@ export const SAMPLE_REPOSITORIES: RepositorioData[] = [
     ],
   },
   {
-    id: "repo-pop-telecom-fibra",
-    nome: "POP Telecom Central #04 - Distribuição FTTH",
-    descricao: "Infraestrutura óptica FTTH, Distribuidor Interno Óptico (DIO) e Retificadores -48V.",
+    id: "repo-rj-rjo-pop04",
+    nome: "RJ-RJO-POP04",
+    descricao: "POP Telecom Central #04 - Infraestrutura óptica FTTH, Distribuidor Interno Óptico (DIO) e Retificadores -48V.",
     icone: "Radio",
     dataCriacao: "2026-07-21",
     itens: [
       {
         id: "eq-101",
-        repositoryId: "repo-pop-telecom-fibra",
+        repositoryId: "repo-rj-rjo-pop04",
         filename: "dio_optico_furukawa_72p.jpg",
         imageUrl: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80",
         uploadDate: "2026-07-21 08:10",
@@ -179,7 +179,7 @@ export const SAMPLE_REPOSITORIES: RepositorioData[] = [
       },
       {
         id: "eq-102",
-        repositoryId: "repo-pop-telecom-fibra",
+        repositoryId: "repo-rj-rjo-pop04",
         filename: "sistema_retificador_emerson_48v.jpg",
         imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80",
         uploadDate: "2026-07-21 08:25",
@@ -207,7 +207,7 @@ export const SAMPLE_REPOSITORIES: RepositorioData[] = [
       },
       {
         id: "eq-103",
-        repositoryId: "repo-pop-telecom-fibra",
+        repositoryId: "repo-rj-rjo-pop04",
         filename: "mikrotik_ccr2216_bgp_router.jpg",
         imageUrl: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80",
         uploadDate: "2026-07-21 08:40",
@@ -234,15 +234,15 @@ export const SAMPLE_REPOSITORIES: RepositorioData[] = [
     ],
   },
   {
-    id: "repo-gabinete-outdoor-5g",
-    nome: "Gabinete Outdoor CellSite 5G (Antenas & RRUs)",
-    descricao: "Equipamentos instalados em estações rádio base (ERB) outdoor, fontes e RRUs.",
+    id: "repo-mg-bhz-erb02",
+    nome: "MG-BHZ-ERB02",
+    descricao: "Gabinete Outdoor CellSite 5G (Antenas & RRUs) - Equipamentos instalados em estações rádio base outdoor.",
     icone: "TowerControl",
     dataCriacao: "2026-07-21",
     itens: [
       {
         id: "eq-201",
-        repositoryId: "repo-gabinete-outdoor-5g",
+        repositoryId: "repo-mg-bhz-erb02",
         filename: "huawei_rru_5g_n78.jpg",
         imageUrl: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80",
         uploadDate: "2026-07-21 11:00",

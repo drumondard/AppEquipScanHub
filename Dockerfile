@@ -1,28 +1,43 @@
-# Estágio de Build
+# =======================================================
+# Dockerfile Multi-Stage para AppEquipScanHub
+# Servidor de Destino: 10.119.13.58 | Porta: 3000
+# Integration API: LiteLLM (10.121.243.101:8083/v1)
+# =======================================================
+
+# Stage 1: Build Phase
 FROM node:20-alpine AS builder
+
 WORKDIR /app
 
-ARG HTTP_PROXY
-ARG HTTPS_PROXY
-ENV HTTP_PROXY=$HTTP_PROXY
-ENV HTTPS_PROXY=$HTTPS_PROXY
+# Copiar manifests de pacotes
+COPY package.json package-lock.json* ./
 
-COPY package*.json ./
-RUN npm install
+# Instalar dependências completas para o build
+RUN npm ci || npm install
 
+# Copiar código fonte completo
 COPY . .
+
+# Compilar aplicação para produção (Vite + esbuild CJS server)
 RUN npm run build
 
-# Estágio de Produção
+# Stage 2: Runtime Production Phase
 FROM node:20-alpine AS runner
+
 WORKDIR /app
 
+ENV NODE_ENV=production
 ENV PORT=3000
-COPY package*.json ./
-RUN npm install --production
 
-# Copia tanto o servidor compilado quanto a pasta dist do frontend
+# Copiar manifestos e dependências de produção
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production || npm install --only=production
+
+# Copiar a pasta dist compilada do estágio de build
 COPY --from=builder /app/dist ./dist
 
+# Expor a porta 3000 do container
 EXPOSE 3000
+
+# Comando de inicialização do servidor
 CMD ["node", "dist/server.cjs"]
