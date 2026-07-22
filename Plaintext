@@ -9,16 +9,32 @@ git add .
 git commit -m "Atualização para Desenvolvimento"
 git push
 
+#>> Envie para o repositório ou atualize o arquivo no servidor:
+git pull
 
-# >> Construir a Imagem Docker
-docker build -t app-equip-scan-hub .
+#>> Limpe o cache de build anterior do docker para garantir que ele ignore camadas corrompidas:
+docker builder prune -f
+
+# >> Reconstruir a Imagem com o Proxy
+docker build \
+  --build-arg HTTP_PROXY=http://10.130.12.13:82 \
+  --build-arg HTTPS_PROXY=http://10.130.12.13:82 \
+  --build-arg http_proxy=http://10.130.12.13:82 \
+  --build-arg https_proxy=http://10.130.12.13:82 \
+  -t app-equip-scan-hub .
+
+#>> Reiniciar o Container
+docker stop equip-scan-hub && docker rm equip-scan-hub
 
 # >> Executar o Container em Produção
 docker run -d \
   --name equip-scan-hub \
   --restart always \
-  --env-file .env \
-  -p 8080:8080 \
+  -e HTTP_PROXY=http://10.130.12.13:82 \
+  -e HTTPS_PROXY=http://10.130.12.13:82 \
+  -p 8080:3000 \
   app-equip-scan-hub
 
 
+# >> Logs
+docker logs -f equip-scan-hub
