@@ -1,0 +1,33 @@
+# Instala todas as dependências
+npm install
+
+# Compila o frontend React (Vite) e o servidor Express em dist/server.cjs
+npm run build
+
+
+ >> ## Execução Contínua com PM2
+
+ # Instalar o PM2 globalmente (caso ainda não possua)
+sudo npm install -g pm2
+
+# Iniciar a aplicação
+pm2 start dist/server.cjs --name "appequipscan"
+
+# Salvar o estado do PM2 para inicialização automática no boot
+pm2 save
+pm2 startup
+
+
+>> # Teste de Acesso
+http://10.119.13.58:3000
+
+
+
+Construir e Executar o Container
+docker build -t appequipscan:latest .
+docker run -d \
+  --name appequipscan \
+  --restart always \
+  -p 3000:3000 \
+  --env-file .env \
+  appequipscan:latest
