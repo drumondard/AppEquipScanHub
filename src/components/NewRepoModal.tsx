@@ -94,7 +94,7 @@ export const NewRepoModal: React.FC<NewRepoModalProps> = ({
             </div>
             <div>
               <h2 className="font-bold text-slate-100 text-sm">Criar Novo Repositório / Lote</h2>
-              <p className="text-xs text-indigo-400 font-mono">Padrão Obrigatório: UF-LOC-EST</p>
+              <p className="text-xs text-indigo-400 font-mono">Diretório Servidor: /AppEquipScanHub/</p>
             </div>
           </div>
           <button
@@ -256,6 +256,11 @@ export const NewRepoModal: React.FC<NewRepoModalProps> = ({
                 );
               })}
             </div>
+          </div>
+
+          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-[11px] text-slate-400 font-mono">
+            <span>Caminho no Servidor:</span>
+            <span className="text-emerald-400 font-bold">/AppEquipScanHub/{nomeCustomizado || "UF-LOC-EST"}</span>
           </div>
 
           <div className="pt-2 flex justify-end gap-2">

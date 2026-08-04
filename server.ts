@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
@@ -9,8 +10,179 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-// Increase payload limit for base64 images
-app.use(express.json({ limit: "25mb" }));
+// Increase payload limit for base64 images (50mb)
+app.use(express.json({ limit: "50mb" }));
+
+// Initialize base directory /AppEquipScanHub for server persistence
+function getBaseDir() {
+  const rootDir = "/AppEquipScanHub";
+  try {
+    if (!fs.existsSync(rootDir)) {
+      fs.mkdirSync(rootDir, { recursive: true });
+    }
+    return rootDir;
+  } catch (err) {
+    console.warn("[AppEquipScanHub] Sem permissão para /AppEquipScanHub na raiz, utilizando pasta local ./AppEquipScanHub");
+    const localDir = path.join(process.cwd(), "AppEquipScanHub");
+    if (!fs.existsSync(localDir)) {
+      fs.mkdirSync(localDir, { recursive: true });
+    }
+    return localDir;
+  }
+}
+
+const BASE_DIR = getBaseDir();
+const UPLOADS_DIR = path.join(BASE_DIR, "uploads");
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+const REPOS_JSON_PATH = path.join(BASE_DIR, "repositories.json");
+
+// Default sample repositories data for initial setup
+const DEFAULT_SAMPLE_REPOSITORIES = [
+  {
+    id: "repo-sp-spo-est14",
+    nome: "SP-SPO-EST14",
+    descricao: "Datacenter Core SP-01 (Rack 14A ao 18B) - Infraestrutura principal de rede local, switches core de alta densidade e roteadores BGP.",
+    icone: "Server",
+    dataCriacao: "2026-07-20",
+    itens: [
+      {
+        id: "eq-001",
+        repositoryId: "repo-sp-spo-est14",
+        filename: "rack_14a_cisco_sw9300.jpg",
+        imageUrl: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80",
+        uploadDate: "2026-07-20 14:32",
+        sugestaoIa: {
+          equipamentoIdentificado: "Switch Cisco Catalyst C9300-48P",
+          fabricante: "Cisco Systems",
+          numeroSerie: "FOC2418L1XY",
+          hostname: "SP_SPO_SW01.R1S3N42H3",
+          categoria: "Switch",
+          nivelConfianca: "Alto",
+          observacoesTecnicas: "Painel frontal com 48 portas Gigabit Ethernet RJ-45 com PoE+ e 4 portas SFP+ 10G uplink. Carcaça cinza metálica de 1U com LED de status operacional ativo.",
+          especificacoesDetectadas: ["48 Portas PoE+", "4 Uplinks SFP+ 10G", "Ocupação 1U de Rack"],
+          boundingBox: { ymin: 25, xmin: 10, ymax: 42, xmax: 90 },
+          timestampAnalise: "2026-07-20 14:32:05",
+        },
+        validacaoHumana: {
+          status: "Pendente",
+          equipamentoConfirmado: "Switch Cisco Catalyst C9300-48P",
+          fabricanteConfirmado: "Cisco Systems",
+          numeroSerieConfirmado: "FOC2418L1XY",
+          hostnameConfirmado: "SP_SPO_SW01.R1S3N42H3",
+          categoriaConfirmada: "Switch",
+          nivelConfiancaFinal: "Alto",
+          observacoesFinais: "Painel frontal com 48 portas Gigabit Ethernet RJ-45 com PoE+ e 4 portas SFP+ 10G uplink. Carcaça cinza metálica de 1U com LED de status operacional ativo.",
+          editadoPeloOperador: false,
+        },
+      },
+      {
+        id: "eq-002",
+        repositoryId: "repo-sp-spo-est14",
+        filename: "rack_14a_huawei_olt_ma5608t.jpg",
+        imageUrl: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80",
+        uploadDate: "2026-07-20 14:35",
+        sugestaoIa: {
+          equipamentoIdentificado: "OLT Huawei SmartAX MA5608T GPON",
+          fabricante: "Huawei",
+          hostname: "DT_9876_RJO_OIPB.R1S3N42H3",
+          categoria: "OLT",
+          nivelConfianca: "Alto",
+          observacoesTecnicas: "Gabinete compacto 2U de alta densidade com placas de serviço GPON de 16 portas e módulos SFP GPON B+ visíveis na parte central.",
+          especificacoesDetectadas: ["2 Slot Servico GPON", "Alimentação -48V DC", "Placa de Controle MCUD"],
+          boundingBox: { ymin: 15, xmin: 15, ymax: 55, xmax: 85 },
+          timestampAnalise: "2026-07-20 14:35:12",
+        },
+        validacaoHumana: {
+          status: "Confirmado",
+          equipamentoConfirmado: "OLT Huawei SmartAX MA5608T GPON",
+          fabricanteConfirmado: "Huawei",
+          hostnameConfirmado: "DT_9876_RJO_OIPB.R1S3N42H3",
+          categoriaConfirmada: "OLT",
+          nivelConfiancaFinal: "Alto",
+          observacoesFinais: "Gabinete compacto 2U de alta densidade com placas de serviço GPON de 16 portas e módulos SFP GPON B+ visíveis na parte central.",
+          operador: "Carlos Silva (Eng. Campo)",
+          dataValidacao: "2026-07-21 09:15",
+          editadoPeloOperador: false,
+        },
+      },
+    ],
+  },
+  {
+    id: "repo-rj-rjo-pop04",
+    nome: "RJ-RJO-POP04",
+    descricao: "POP Telecom Central #04 - Infraestrutura óptica FTTH, Distribuidor Interno Óptico (DIO) e Retificadores -48V.",
+    icone: "Radio",
+    dataCriacao: "2026-07-21",
+    itens: [
+      {
+        id: "eq-101",
+        repositoryId: "repo-rj-rjo-pop04",
+        filename: "dio_optico_furukawa_72p.jpg",
+        imageUrl: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80",
+        uploadDate: "2026-07-21 08:10",
+        sugestaoIa: {
+          equipamentoIdentificado: "DIO B48 Distribuidor Interno Óptico 72 Fibras SC/APC",
+          fabricante: "Furukawa / Fibracem",
+          categoria: "DIO (Fibra)",
+          nivelConfianca: "Alto",
+          observacoesTecnicas: "Painel de fusão e distribuição de fibra óptica de 3U com acopladores SC/APC monomodo verde e gavetas deslizantes para fusões.",
+          especificacoesDetectadas: ["72 Acopladores SC/APC", "Bandejas de Emenda Internas", "Chassi de Alumínio 3U"],
+          boundingBox: { ymin: 18, xmin: 10, ymax: 65, xmax: 90 },
+          timestampAnalise: "2026-07-21 08:10:44",
+        },
+        validacaoHumana: {
+          status: "Pendente",
+          equipamentoConfirmado: "DIO B48 Distribuidor Interno Óptico 72 Fibras SC/APC",
+          fabricanteConfirmado: "Furukawa / Fibracem",
+          categoriaConfirmada: "DIO (Fibra)",
+          nivelConfiancaFinal: "Alto",
+          observacoesFinais: "Painel de fusão e distribuição de fibra óptica de 3U com acopladores SC/APC monomodo verde e gavetas deslizantes para fusões.",
+          editadoPeloOperador: false,
+        },
+      },
+    ],
+  },
+  {
+    id: "repo-mg-bhz-erb02",
+    nome: "MG-BHZ-ERB02",
+    descricao: "Gabinete Outdoor CellSite 5G (Antenas & RRUs) - Equipamentos instalados em estações rádio base outdoor.",
+    icone: "TowerControl",
+    dataCriacao: "2026-07-21",
+    itens: [],
+  },
+];
+
+// Read or initialize repositories from /AppEquipScanHub/repositories.json
+function getRepositoriesOnServer(): any[] {
+  try {
+    if (fs.existsSync(REPOS_JSON_PATH)) {
+      const data = fs.readFileSync(REPOS_JSON_PATH, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error("[AppEquipScanHub] Erro ao ler repositories.json no servidor:", err);
+  }
+
+  // Initialize if missing
+  saveRepositoriesOnServer(DEFAULT_SAMPLE_REPOSITORIES);
+  return DEFAULT_SAMPLE_REPOSITORIES;
+}
+
+function saveRepositoriesOnServer(repos: any[]): void {
+  try {
+    fs.writeFileSync(REPOS_JSON_PATH, JSON.stringify(repos, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[AppEquipScanHub] Erro ao salvar repositories.json no servidor:", err);
+  }
+}
+
+// Serve uploaded static files from /AppEquipScanHub/uploads and /AppEquipScanHub
+app.use("/AppEquipScanHub/uploads", express.static(UPLOADS_DIR));
+app.use("/AppEquipScanHub", express.static(BASE_DIR));
+app.use("/uploads", express.static(UPLOADS_DIR));
 
 // Helper function to process equipment image via LiteLLM or Gemini
 async function analyzeEquipmentImage(
@@ -251,9 +423,258 @@ app.post("/api/identify-equipment", async (req, res) => {
   }
 });
 
+// GET all repositories (from server file /AppEquipScanHub/repositories.json)
+app.get("/api/repositories", (_req, res) => {
+  try {
+    const repos = getRepositoriesOnServer();
+    return res.json({ success: true, repositories: repos });
+  } catch (error: any) {
+    return res.status(500).json({ error: "Erro ao obter repositórios.", details: error.message });
+  }
+});
+
+// POST create a new repository / batch on server (creates folder at /AppEquipScanHub/<NOME>)
+app.post("/api/repositories", (req, res) => {
+  try {
+    const { nome, descricao, icone = "Server" } = req.body;
+    if (!nome) {
+      return res.status(400).json({ error: "Nome do repositório/lote é obrigatório." });
+    }
+
+    const repos = getRepositoriesOnServer();
+    const cleanName = nome.trim().toUpperCase();
+
+    // Create subfolder at /AppEquipScanHub/<NOME>
+    const repoFolderPath = path.join(BASE_DIR, cleanName);
+    if (!fs.existsSync(repoFolderPath)) {
+      try {
+        fs.mkdirSync(repoFolderPath, { recursive: true });
+        console.log(`[AppEquipScanHub] Pasta criada no servidor: ${repoFolderPath}`);
+      } catch (err) {
+        console.warn(`[AppEquipScanHub] Aviso ao criar pasta ${repoFolderPath}:`, err);
+      }
+    }
+
+    const newRepo = {
+      id: `repo-${cleanName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`,
+      nome: cleanName,
+      descricao: descricao || `Lote técnico de equipamentos da estação ${cleanName}`,
+      icone,
+      dataCriacao: new Date().toISOString().slice(0, 10),
+      itens: [],
+    };
+
+    repos.unshift(newRepo);
+    saveRepositoriesOnServer(repos);
+
+    return res.json({ success: true, repository: newRepo, repositories: repos });
+  } catch (error: any) {
+    return res.status(500).json({ error: "Erro ao criar repositório.", details: error.message });
+  }
+});
+
+// DELETE a repository from server
+app.delete("/api/repositories/:id", (req, res) => {
+  try {
+    const repoId = req.params.id;
+    let repos = getRepositoriesOnServer();
+    repos = repos.filter((r) => r.id !== repoId);
+    saveRepositoriesOnServer(repos);
+    return res.json({ success: true, repositories: repos });
+  } catch (error: any) {
+    return res.status(500).json({ error: "Erro ao excluir repositório.", details: error.message });
+  }
+});
+
+// POST clear items in a repository
+app.post("/api/repositories/clear/:id", (req, res) => {
+  try {
+    const repoId = req.params.id;
+    const repos = getRepositoriesOnServer();
+    const repo = repos.find((r) => r.id === repoId);
+    if (repo) {
+      repo.itens = [];
+      saveRepositoriesOnServer(repos);
+    }
+    return res.json({ success: true, repositories: repos });
+  } catch (error: any) {
+    return res.status(500).json({ error: "Erro ao limpar repositório.", details: error.message });
+  }
+});
+
+// POST reset repositories to default sample data
+app.post("/api/repositories/reset", (_req, res) => {
+  try {
+    saveRepositoriesOnServer(DEFAULT_SAMPLE_REPOSITORIES);
+    return res.json({ success: true, repositories: DEFAULT_SAMPLE_REPOSITORIES });
+  } catch (error: any) {
+    return res.status(500).json({ error: "Erro ao resetar repositórios.", details: error.message });
+  }
+});
+
+// POST Upload image to batch & save file at /AppEquipScanHub/uploads/ and /AppEquipScanHub/<NOME>/
+app.post("/api/upload-item", async (req, res) => {
+  try {
+    const { repositoryId, filename = "imagem_equipamento.jpg", imageBase64, mimeType = "image/jpeg", customPrompt } = req.body;
+
+    if (!imageBase64) {
+      return res.status(400).json({ error: "Nenhuma imagem em base64 fornecida." });
+    }
+
+    const repos = getRepositoriesOnServer();
+    const repo = repos.find((r) => r.id === repositoryId);
+
+    if (!repo) {
+      return res.status(404).json({ error: "Repositório não encontrado." });
+    }
+
+    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    const itemId = `eq-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // Ext do arquivo
+    let ext = ".jpg";
+    if (mimeType.includes("png")) ext = ".png";
+    if (mimeType.includes("webp")) ext = ".webp";
+
+    const sanitizedOriginalName = filename.replace(/[^a-zA-Z0-9_.-]/g, "_");
+    const serverFileName = `${itemId}_${sanitizedOriginalName}`;
+    const fileWithExt = serverFileName.endsWith(ext) ? serverFileName : `${serverFileName}${ext}`;
+
+    // 1. Salvar no diretório global /AppEquipScanHub/uploads/
+    const uploadFilePath = path.join(UPLOADS_DIR, fileWithExt);
+    const imageBuffer = Buffer.from(cleanBase64, "base64");
+    fs.writeFileSync(uploadFilePath, imageBuffer);
+    console.log(`[AppEquipScanHub] Foto salva com sucesso no servidor: ${uploadFilePath}`);
+
+    // 2. Salvar cópia no diretório do lote /AppEquipScanHub/<NOME>/
+    const repoFolderPath = path.join(BASE_DIR, repo.nome);
+    if (!fs.existsSync(repoFolderPath)) {
+      fs.mkdirSync(repoFolderPath, { recursive: true });
+    }
+    const repoFilePath = path.join(repoFolderPath, fileWithExt);
+    fs.writeFileSync(repoFilePath, imageBuffer);
+
+    // URL acessível pelo frontend (servido estaticamente)
+    const publicImageUrl = `/AppEquipScanHub/uploads/${fileWithExt}`;
+
+    // Executar análise por IA Gemini
+    let aiData = {
+      equipamentoIdentificado: `Equipamento de Rede (${filename})`,
+      fabricante: "Não Detectado",
+      numeroSerie: "S/N não visível",
+      hostname: "Não detectado",
+      categoria: "Outro",
+      nivelConfianca: "Médio",
+      observacoesTecnicas: "Arquivo de imagem salvo no servidor /AppEquipScanHub/.",
+      especificacoesDetectadas: ["Salvo no servidor /AppEquipScanHub/"],
+      boundingBox: { ymin: 15, xmin: 15, ymax: 85, xmax: 85 },
+    };
+
+    try {
+      const aiResult = await analyzeEquipmentImage(cleanBase64, mimeType, customPrompt);
+      if (aiResult && aiResult.data) {
+        aiData = { ...aiData, ...aiResult.data };
+      }
+    } catch (aiErr) {
+      console.warn("[AppEquipScanHub] Erro na análise IA automática durante upload:", aiErr);
+    }
+
+    const newItem = {
+      id: itemId,
+      repositoryId: repo.id,
+      filename: filename,
+      imageUrl: publicImageUrl,
+      uploadDate: new Date().toLocaleString("pt-BR"),
+      sugestaoIa: {
+        equipamentoIdentificado: aiData.equipamentoIdentificado,
+        fabricante: aiData.fabricante,
+        numeroSerie: aiData.numeroSerie,
+        hostname: aiData.hostname,
+        categoria: aiData.categoria,
+        nivelConfianca: aiData.nivelConfianca,
+        observacoesTecnicas: aiData.observacoesTecnicas,
+        especificacoesDetectadas: aiData.especificacoesDetectadas || ["Upload salvo em /AppEquipScanHub/"],
+        boundingBox: aiData.boundingBox || { ymin: 15, xmin: 15, ymax: 85, xmax: 85 },
+        timestampAnalise: new Date().toLocaleString("pt-BR"),
+      },
+      validacaoHumana: {
+        status: "Pendente",
+        equipamentoConfirmado: aiData.equipamentoIdentificado,
+        fabricanteConfirmado: aiData.fabricante || "",
+        numeroSerieConfirmado: aiData.numeroSerie || "",
+        hostnameConfirmado: aiData.hostname || "",
+        categoriaConfirmada: aiData.categoria || "Outro",
+        nivelConfiancaFinal: aiData.nivelConfianca || "Médio",
+        observacoesFinais: aiData.observacoesTecnicas,
+        editadoPeloOperador: false,
+      },
+    };
+
+    repo.itens.push(newItem);
+    saveRepositoriesOnServer(repos);
+
+    return res.json({ success: true, item: newItem, repositories: repos });
+  } catch (error: any) {
+    console.error("Erro no upload de foto para o servidor:", error);
+    return res.status(500).json({ error: "Erro ao salvar foto no servidor.", details: error.message });
+  }
+});
+
+// PUT update item details (validacaoHumana, boundingBox, etc.)
+app.put("/api/items/:id", (req, res) => {
+  try {
+    const itemId = req.params.id;
+    const { repositoryId, validacaoHumana, sugestaoIa } = req.body;
+
+    const repos = getRepositoriesOnServer();
+    let updatedItem = null;
+
+    for (const repo of repos) {
+      if (repositoryId && repo.id !== repositoryId) continue;
+      const item = repo.itens.find((i: any) => i.id === itemId);
+      if (item) {
+        if (validacaoHumana) {
+          item.validacaoHumana = { ...item.validacaoHumana, ...validacaoHumana };
+        }
+        if (sugestaoIa) {
+          item.sugestaoIa = { ...item.sugestaoIa, ...sugestaoIa };
+        }
+        updatedItem = item;
+        break;
+      }
+    }
+
+    saveRepositoriesOnServer(repos);
+    return res.json({ success: true, item: updatedItem, repositories: repos });
+  } catch (error: any) {
+    return res.status(500).json({ error: "Erro ao atualizar item.", details: error.message });
+  }
+});
+
+// DELETE single item from server
+app.delete("/api/items/:id", (req, res) => {
+  try {
+    const itemId = req.params.id;
+    const repos = getRepositoriesOnServer();
+
+    for (const repo of repos) {
+      const idx = repo.itens.findIndex((i: any) => i.id === itemId);
+      if (idx !== -1) {
+        repo.itens.splice(idx, 1);
+        break;
+      }
+    }
+
+    saveRepositoriesOnServer(repos);
+    return res.json({ success: true, repositories: repos });
+  } catch (error: any) {
+    return res.status(500).json({ error: "Erro ao remover item do servidor.", details: error.message });
+  }
+});
+
 // Health check endpoint
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", app: "AppEquipScan API" });
+  res.json({ status: "ok", app: "AppEquipScan API", serverStoragePath: BASE_DIR });
 });
 
 async function startServer() {

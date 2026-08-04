@@ -42,21 +42,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         reader.readAsDataURL(file);
       });
 
-      // Call Gemini Vision AI Server Route for dynamic detection!
-      let aiResponseData = {
-        equipamentoIdentificado: `Equipamento de Rede (Foto #${index + 1})`,
-        fabricante: "Não Detectado",
-        numeroSerie: "S/N não visível",
-        categoria: "Outro" as const,
-        nivelConfianca: "Médio" as const,
-        observacoesTecnicas: "Imagem carregada pelo operador. Processamento inicial visual.",
-      };
-
       try {
-        const res = await fetch("/api/identify-equipment", {
+        // Post image directly to server storage endpoint /api/upload-item
+        const res = await fetch("/api/upload-item", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            repositoryId: repoId,
+            filename: file.name,
             imageBase64: base64,
             mimeType: file.type || "image/jpeg",
           }),
@@ -64,47 +57,20 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
         if (res.ok) {
           const json = await res.json();
-          if (json.success && json.data) {
-            aiResponseData = json.data;
+          if (json.success && json.item) {
+            newItems.push(json.item);
           }
+        } else {
+          console.error("Erro na resposta do upload para o servidor:", await res.text());
         }
       } catch (err) {
-        console.warn("Análise IA automática em background falhou, utilizando fallback.", err);
+        console.error("Erro ao enviar imagem para o servidor /AppEquipScanHub/:", err);
       }
-
-      const item: EquipamentoItem = {
-        id: `upload-${Date.now()}-${index}`,
-        repositoryId: repoId,
-        filename: file.name,
-        imageUrl: base64,
-        uploadDate: new Date().toLocaleString("pt-BR"),
-        sugestaoIa: {
-          equipamentoIdentificado: aiResponseData.equipamentoIdentificado,
-          fabricante: aiResponseData.fabricante,
-          numeroSerie: aiResponseData.numeroSerie,
-          categoria: aiResponseData.categoria as any,
-          nivelConfianca: aiResponseData.nivelConfianca as any,
-          observacoesTecnicas: aiResponseData.observacoesTecnicas,
-          especificacoesDetectadas: ["Upload Direto do Operador"],
-          boundingBox: { ymin: 15, xmin: 15, ymax: 85, xmax: 85 },
-          timestampAnalise: new Date().toLocaleString("pt-BR"),
-        },
-        validacaoHumana: {
-          status: "Pendente",
-          equipamentoConfirmado: aiResponseData.equipamentoIdentificado,
-          fabricanteConfirmado: aiResponseData.fabricante || "",
-          numeroSerieConfirmado: aiResponseData.numeroSerie || "",
-          categoriaConfirmada: (aiResponseData.categoria as any) || "Outro",
-          nivelConfiancaFinal: (aiResponseData.nivelConfianca as any) || "Médio",
-          observacoesFinais: aiResponseData.observacoesTecnicas,
-          editadoPeloOperador: false,
-        },
-      };
-
-      newItems.push(item);
     }
 
-    onAddImages(newItems);
+    if (newItems.length > 0) {
+      onAddImages(newItems);
+    }
     setIsProcessing(false);
     setSelectedFiles([]);
     onClose();

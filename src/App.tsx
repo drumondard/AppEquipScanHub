@@ -13,25 +13,11 @@ import { ClearRepoModal } from "./components/ClearRepoModal";
 import { getCroppedImageBase64 } from "./utils/imageCropper";
 
 export default function App() {
-  // Session Persistence (localStorage initialized, preserving empty states)
-  const [repositories, setRepositories] = useState<RepositorioData[]>(() => {
-    const saved = localStorage.getItem("appequipscan_repos");
-    if (saved !== null) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      } catch (e) {
-        console.error("Erro ao carregar dados salvos da sessão:", e);
-      }
-    }
-    return SAMPLE_REPOSITORIES;
-  });
+  // Real-time server sync state
+  const [repositories, setRepositories] = useState<RepositorioData[]>([]);
+  const [isSyncing, setIsSyncing] = useState<boolean>(true);
 
-  const [selectedRepoId, setSelectedRepoId] = useState<string>(
-    repositories[0]?.id || ""
-  );
+  const [selectedRepoId, setSelectedRepoId] = useState<string>("");
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("Todos");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -44,10 +30,37 @@ export default function App() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
-  // Save session state to localStorage on update
+  // Fetch initial repositories from server (/AppEquipScanHub/repositories.json)
+  const fetchRepositoriesFromServer = async (silent = false) => {
+    if (!silent) setIsSyncing(true);
+    try {
+      const res = await fetch("/api/repositories");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.repositories)) {
+          setRepositories(data.repositories);
+          if (!selectedRepoId && data.repositories.length > 0) {
+            setSelectedRepoId(data.repositories[0].id);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Erro ao carregar dados do servidor /AppEquipScanHub/:", err);
+    } finally {
+      if (!silent) setIsSyncing(false);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem("appequipscan_repos", JSON.stringify(repositories));
-  }, [repositories]);
+    fetchRepositoriesFromServer();
+
+    // Background interval to keep multiple users/browsers synced every 10 seconds
+    const interval = setInterval(() => {
+      fetchRepositoriesFromServer(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Current active repository
   const currentRepo = useMemo(() => {
@@ -135,12 +148,13 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [filteredItems, currentItemIndex]);
 
-  // Update item validation in session state
-  const handleUpdateValidation = (
+  // Update item validation in session state & persist on server
+  const handleUpdateValidation = async (
     updatedFields: Partial<EquipamentoItem["validacaoHumana"]>
   ) => {
-    if (!activeItem) return;
+    if (!activeItem || !currentRepo) return;
 
+    // Optimistic local update
     setRepositories((prev) =>
       prev.map((repo) => {
         if (repo.id !== currentRepo.id) return repo;
@@ -159,6 +173,19 @@ export default function App() {
         };
       })
     );
+
+    try {
+      await fetch(`/api/items/${activeItem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repositoryId: currentRepo.id,
+          validacaoHumana: updatedFields,
+        }),
+      });
+    } catch (err) {
+      console.error("Erro ao atualizar validação no servidor:", err);
+    }
   };
 
   // Live re-analysis with Gemini AI Server using cropped bounding box
@@ -195,6 +222,30 @@ export default function App() {
         if (json.success && json.data) {
           const aiData = json.data;
 
+          const updatedSugestao = {
+            equipamentoIdentificado: aiData.equipamentoIdentificado,
+            fabricante: aiData.fabricante,
+            numeroSerie: aiData.numeroSerie,
+            hostname: aiData.hostname,
+            categoria: aiData.categoria,
+            nivelConfianca: aiData.nivelConfianca,
+            observacoesTecnicas: aiData.observacoesTecnicas,
+            especificacoesDetectadas: aiData.especificacoesDetectadas,
+            boundingBox: aiData.boundingBox || activeItem.sugestaoIa.boundingBox,
+            timestampAnalise: new Date().toLocaleString("pt-BR"),
+          };
+
+          const updatedValidacao = {
+            ...activeItem.validacaoHumana,
+            equipamentoConfirmado: aiData.equipamentoIdentificado,
+            fabricanteConfirmado: aiData.fabricante || "",
+            numeroSerieConfirmado: aiData.numeroSerie || "",
+            hostnameConfirmado: aiData.hostname || "",
+            categoriaConfirmada: aiData.categoria || "Outro",
+            nivelConfiancaFinal: aiData.nivelConfianca || "Alto",
+            observacoesFinais: aiData.observacoesTecnicas,
+          };
+
           setRepositories((prev) =>
             prev.map((repo) => {
               if (repo.id !== currentRepo.id) return repo;
@@ -204,33 +255,24 @@ export default function App() {
                   if (item.id !== activeItem.id) return item;
                   return {
                     ...item,
-                    sugestaoIa: {
-                      equipamentoIdentificado: aiData.equipamentoIdentificado,
-                      fabricante: aiData.fabricante,
-                      numeroSerie: aiData.numeroSerie,
-                      hostname: aiData.hostname,
-                      categoria: aiData.categoria,
-                      nivelConfianca: aiData.nivelConfianca,
-                      observacoesTecnicas: aiData.observacoesTecnicas,
-                      especificacoesDetectadas: aiData.especificacoesDetectadas,
-                      boundingBox: aiData.boundingBox || item.sugestaoIa.boundingBox,
-                      timestampAnalise: new Date().toLocaleString("pt-BR"),
-                    },
-                    validacaoHumana: {
-                      ...item.validacaoHumana,
-                      equipamentoConfirmado: aiData.equipamentoIdentificado,
-                      fabricanteConfirmado: aiData.fabricante || "",
-                      numeroSerieConfirmado: aiData.numeroSerie || "",
-                      hostnameConfirmado: aiData.hostname || "",
-                      categoriaConfirmada: aiData.categoria || "Outro",
-                      nivelConfiancaFinal: aiData.nivelConfianca || "Alto",
-                      observacoesFinais: aiData.observacoesTecnicas,
-                    },
+                    sugestaoIa: updatedSugestao,
+                    validacaoHumana: updatedValidacao,
                   };
                 }),
               };
             })
           );
+
+          // Save on server
+          fetch(`/api/items/${activeItem.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              repositoryId: currentRepo.id,
+              sugestaoIa: updatedSugestao,
+              validacaoHumana: updatedValidacao,
+            }),
+          });
         }
       }
     } catch (error) {
@@ -241,8 +283,18 @@ export default function App() {
   };
 
   // Update Bounding Box for the active item
-  const handleUpdateBoundingBox = (newBox: BoundingBox) => {
+  const handleUpdateBoundingBox = async (newBox: BoundingBox) => {
     if (!activeItem || !currentRepo) return;
+
+    const updatedSugestao = {
+      ...activeItem.sugestaoIa,
+      boundingBox: newBox,
+    };
+
+    const updatedValidacao = {
+      ...activeItem.validacaoHumana,
+      editadoPeloOperador: true,
+    };
 
     setRepositories((prev) =>
       prev.map((repo) => {
@@ -253,39 +305,56 @@ export default function App() {
             if (item.id !== activeItem.id) return item;
             return {
               ...item,
-              sugestaoIa: {
-                ...item.sugestaoIa,
-                boundingBox: newBox,
-              },
-              validacaoHumana: {
-                ...item.validacaoHumana,
-                editadoPeloOperador: true,
-              },
+              sugestaoIa: updatedSugestao,
+              validacaoHumana: updatedValidacao,
             };
           }),
         };
       })
     );
+
+    try {
+      await fetch(`/api/items/${activeItem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repositoryId: currentRepo.id,
+          sugestaoIa: updatedSugestao,
+          validacaoHumana: updatedValidacao,
+        }),
+      });
+    } catch (err) {
+      console.error("Erro ao atualizar Bounding Box no servidor:", err);
+    }
   };
 
-  // Add new repository handler
-  const handleCreateRepo = (nome: string, descricao: string, icone: string) => {
-    const newRepo: RepositorioData = {
-      id: `repo-custom-${Date.now()}`,
-      nome,
-      descricao,
-      icone,
-      dataCriacao: new Date().toISOString().slice(0, 10),
-      itens: [],
-    };
+  // Add new repository handler (creates repo & folder at /AppEquipScanHub/<NOME>)
+  const handleCreateRepo = async (nome: string, descricao: string, icone: string) => {
+    try {
+      const res = await fetch("/api/repositories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, descricao, icone }),
+      });
 
-    setRepositories((prev) => [newRepo, ...prev]);
-    setSelectedRepoId(newRepo.id);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.repositories) {
+          setRepositories(data.repositories);
+          if (data.repository?.id) {
+            setSelectedRepoId(data.repository.id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Erro ao criar repositório no servidor /AppEquipScanHub/:", err);
+    }
   };
 
-  // Delete a single photo from active repo (will not be restored)
-  const handleDeleteSinglePhoto = (itemId: string) => {
+  // Delete a single photo from active repo
+  const handleDeleteSinglePhoto = async (itemId: string) => {
     if (!currentRepo) return;
+
     setRepositories((prev) =>
       prev.map((repo) => {
         if (repo.id !== currentRepo.id) return repo;
@@ -296,10 +365,18 @@ export default function App() {
       })
     );
     setActiveItemId(null);
+
+    try {
+      await fetch(`/api/items/${itemId}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Erro ao deletar item no servidor:", err);
+    }
   };
 
-  // Clear items from a specific repository (will not be restored)
-  const handleClearRepoItems = (repoId: string) => {
+  // Clear items from a specific repository
+  const handleClearRepoItems = async (repoId: string) => {
     setRepositories((prev) =>
       prev.map((repo) => {
         if (repo.id !== repoId) return repo;
@@ -310,10 +387,18 @@ export default function App() {
       })
     );
     setActiveItemId(null);
+
+    try {
+      await fetch(`/api/repositories/clear/${repoId}`, {
+        method: "POST",
+      });
+    } catch (err) {
+      console.error("Erro ao limpar lote no servidor:", err);
+    }
   };
 
-  // Delete a repository completely (will not automatically restore default repos)
-  const handleDeleteRepo = (repoId: string) => {
+  // Delete a repository completely
+  const handleDeleteRepo = async (repoId: string) => {
     const remainingRepos = repositories.filter((r) => r.id !== repoId);
     setRepositories(remainingRepos);
 
@@ -323,28 +408,40 @@ export default function App() {
       setSelectedRepoId("");
     }
     setActiveItemId(null);
+
+    try {
+      await fetch(`/api/repositories/${repoId}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Erro ao excluir repositório no servidor:", err);
+    }
   };
 
   // Reset all repositories to sample data explicitly on request
-  const handleResetAllRepos = () => {
-    setRepositories(SAMPLE_REPOSITORIES);
-    setSelectedRepoId(SAMPLE_REPOSITORIES[0].id);
+  const handleResetAllRepos = async () => {
+    try {
+      const res = await fetch("/api/repositories/reset", {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.repositories) {
+          setRepositories(data.repositories);
+          if (data.repositories.length > 0) {
+            setSelectedRepoId(data.repositories[0].id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Erro ao resetar dados no servidor:", err);
+    }
     setActiveItemId(null);
   };
 
   // Add uploaded images handler
   const handleAddImages = (newItems: EquipamentoItem[]) => {
-    if (!currentRepo) return;
-    setRepositories((prev) =>
-      prev.map((repo) => {
-        if (repo.id !== currentRepo.id) return repo;
-        return {
-          ...repo,
-          itens: [...repo.itens, ...newItems],
-        };
-      })
-    );
-
+    fetchRepositoriesFromServer(true);
     if (newItems.length > 0) {
       setActiveItemId(newItems[0].id);
     }
